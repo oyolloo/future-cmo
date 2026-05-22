@@ -6,6 +6,8 @@
       "@/*": ["./*"],
       "@kit/database": ["../../packages/database/src/index.ts"],
       "@kit/database/schema": ["../../packages/database/src/schema/index.ts"],
+      "@kit/database/queries": ["../../packages/database/src/queries/index.ts"],
+      "@kit/database/client": ["../../packages/database/src/client.ts"],
       "@kit/shared": ["../../packages/shared/src/index.ts"],
       "@kit/shared/*": ["../../packages/shared/src/*"],
       "@kit/ui": ["../../packages/ui/src/index.ts"],

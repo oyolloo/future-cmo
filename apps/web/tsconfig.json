@@ -1,0 +1,25 @@
+{
+  "extends": "@future-cmo/tsconfig/nextjs.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@kit/database": ["../../packages/database/src/index.ts"],
+      "@kit/database/schema": ["../../packages/database/src/schema/index.ts"],
+      "@kit/shared": ["../../packages/shared/src/index.ts"],
+      "@kit/shared/*": ["../../packages/shared/src/*"],
+      "@kit/ui": ["../../packages/ui/src/index.ts"],
+      "@kit/ui/*": ["../../packages/ui/src/*"]
+    },
+    "plugins": [{ "name": "next" }]
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.mts",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": ["node_modules", ".next", ".turbo"]
+}

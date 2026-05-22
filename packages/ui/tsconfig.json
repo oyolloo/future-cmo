@@ -1,0 +1,9 @@
+{
+  "extends": "@future-cmo/tsconfig/library.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "jsx": "preserve"
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", "dist", ".turbo"]
+}

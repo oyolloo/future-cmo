@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import postgres from "postgres";
 
-config({ path: ".env" });
+config({ path: "apps/web/.env" });
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL not set");

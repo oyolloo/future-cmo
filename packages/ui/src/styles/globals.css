@@ -53,73 +53,95 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ============================================================
+   future-cmo — VaultKit-inspired dark warm palette
+   Single theme. Hue ~60° gives the warm undertone you see in
+   the reference (avoiding pure cool black). Primary is a warm
+   amber/orange in the ~50° range.
+   ============================================================ */
+
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  /* surfaces — dark warm gray scale */
+  --background: oklch(0.13 0.008 60);
+  --foreground: oklch(0.92 0.013 80);
+  --card: oklch(0.165 0.008 60);
+  --card-foreground: oklch(0.92 0.013 80);
+  --popover: oklch(0.18 0.008 60);
+  --popover-foreground: oklch(0.92 0.013 80);
+
+  /* accents / neutrals */
+  --secondary: oklch(0.22 0.008 60);
+  --secondary-foreground: oklch(0.92 0.013 80);
+  --muted: oklch(0.20 0.008 60);
+  --muted-foreground: oklch(0.62 0.012 70);
+  --accent: oklch(0.24 0.008 60);
+  --accent-foreground: oklch(0.92 0.013 80);
+
+  /* brand — warm amber */
+  --primary: oklch(0.70 0.16 50);
+  --primary-foreground: oklch(0.15 0.008 60);
+
+  /* state */
+  --destructive: oklch(0.65 0.18 25);
+
+  /* lines + inputs */
+  --border: oklch(0.26 0.008 60);
+  --input: oklch(0.22 0.008 60);
+  --ring: oklch(0.70 0.16 50);
+
+  /* chart / tag tints — amber, green, blue, yellow, lilac */
+  --chart-1: oklch(0.70 0.16 50);
+  --chart-2: oklch(0.72 0.14 160);
+  --chart-3: oklch(0.70 0.14 230);
+  --chart-4: oklch(0.78 0.14 90);
+  --chart-5: oklch(0.70 0.14 295);
+
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+
+  /* sidebar (reserved — used when full chrome lands) */
+  --sidebar: oklch(0.145 0.008 60);
+  --sidebar-foreground: oklch(0.92 0.013 80);
+  --sidebar-primary: oklch(0.70 0.16 50);
+  --sidebar-primary-foreground: oklch(0.15 0.008 60);
+  --sidebar-accent: oklch(0.22 0.008 60);
+  --sidebar-accent-foreground: oklch(0.92 0.013 80);
+  --sidebar-border: oklch(0.26 0.008 60);
+  --sidebar-ring: oklch(0.70 0.16 50);
 }
 
+/* Mirror the palette so explicit dark mode opt-in stays consistent. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: oklch(0.13 0.008 60);
+  --foreground: oklch(0.92 0.013 80);
+  --card: oklch(0.165 0.008 60);
+  --card-foreground: oklch(0.92 0.013 80);
+  --popover: oklch(0.18 0.008 60);
+  --popover-foreground: oklch(0.92 0.013 80);
+  --secondary: oklch(0.22 0.008 60);
+  --secondary-foreground: oklch(0.92 0.013 80);
+  --muted: oklch(0.20 0.008 60);
+  --muted-foreground: oklch(0.62 0.012 70);
+  --accent: oklch(0.24 0.008 60);
+  --accent-foreground: oklch(0.92 0.013 80);
+  --primary: oklch(0.70 0.16 50);
+  --primary-foreground: oklch(0.15 0.008 60);
+  --destructive: oklch(0.65 0.18 25);
+  --border: oklch(0.26 0.008 60);
+  --input: oklch(0.22 0.008 60);
+  --ring: oklch(0.70 0.16 50);
+  --chart-1: oklch(0.70 0.16 50);
+  --chart-2: oklch(0.72 0.14 160);
+  --chart-3: oklch(0.70 0.14 230);
+  --chart-4: oklch(0.78 0.14 90);
+  --chart-5: oklch(0.70 0.14 295);
+  --sidebar: oklch(0.145 0.008 60);
+  --sidebar-foreground: oklch(0.92 0.013 80);
+  --sidebar-primary: oklch(0.70 0.16 50);
+  --sidebar-primary-foreground: oklch(0.15 0.008 60);
+  --sidebar-accent: oklch(0.22 0.008 60);
+  --sidebar-accent-foreground: oklch(0.92 0.013 80);
+  --sidebar-border: oklch(0.26 0.008 60);
+  --sidebar-ring: oklch(0.70 0.16 50);
 }
 
 @layer base {
@@ -131,5 +153,73 @@
   }
   html {
     @apply font-sans;
+  }
+
+  /* Numeric variant tightens letterforms a touch for stat numbers */
+  .num-display {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "ss01" on, "cv11" on;
+  }
+}
+
+@layer components {
+  /* UPPERCASE micro-label — used for "TOTAL VAULTS", section headers */
+  .text-label {
+    @apply font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-muted-foreground;
+  }
+
+  /* `//` comment-style helper text — used for "// 3 PINNED · DRAG TO REORDER" */
+  .text-comment {
+    @apply font-mono text-xs text-muted-foreground;
+  }
+
+  /* Numbered corner badge — "01", "02" on stat cards */
+  .stat-badge {
+    @apply font-mono text-xs tracking-wider text-muted-foreground/70;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   Print styles — Marketing Audit Report → "Save as PDF"
+   Chrome (sidebar, topbar, toolbar buttons) is tagged with the
+   data-print-hide attribute; print only renders the report body.
+   ──────────────────────────────────────────────────────────── */
+@media print {
+  html,
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Hide anything explicitly marked, plus Sonner's portal. */
+  [data-print-hide],
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+
+  /* Cards / tables / borders → light on paper */
+  [class*="bg-card"],
+  [class*="bg-muted"],
+  [class*="bg-background"] {
+    background: white !important;
+  }
+  [class*="border-border"],
+  [class*="border-input"] {
+    border-color: #e5e5e5 !important;
+  }
+
+  /* Text → near-black */
+  [class*="text-foreground"],
+  [class*="text-muted-foreground"] {
+    color: #111 !important;
+  }
+
+  /* Avoid mid-row breaks */
+  tr,
+  .rounded-md,
+  .rounded-lg {
+    page-break-inside: avoid;
   }
 }

@@ -7,6 +7,8 @@ import {
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState } from "react";
 
+import { Toaster } from "@kit/ui/sonner";
+
 function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
@@ -27,6 +29,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
+      <Toaster richColors position="top-right" />
       {process.env.NODE_ENV === "development" ? (
         <ReactQueryDevtools initialIsOpen={false} />
       ) : null}

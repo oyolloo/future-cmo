@@ -12,13 +12,19 @@ export default async function AuthLayout({
   if (user) redirect("/dashboard");
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-12">
+    <div className="relative isolate flex min-h-screen items-center justify-center px-4 py-12">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[600px] bg-[radial-gradient(50%_50%_at_50%_0%,oklch(0.70_0.16_50/0.15),transparent_70%)]"
+      />
+
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">future-cmo</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            AI-powered marketing strategy
-          </p>
+          <div className="inline-flex items-center gap-2">
+            <span className="size-2 rounded-sm bg-primary" />
+            <span className="font-mono text-sm tracking-tight">future-cmo</span>
+          </div>
+          <p className="text-label mt-3">— workspace access</p>
         </div>
         {children}
       </div>

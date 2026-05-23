@@ -8,6 +8,27 @@
       "when": 1779430993016,
       "tag": "0000_loud_mastermind",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779456102458,
+      "tag": "0001_loud_cyclops",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779459027908,
+      "tag": "0002_mighty_madame_hydra",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779522646543,
+      "tag": "0003_worthless_swarm",
+      "breakpoints": true
     }
   ]
 }

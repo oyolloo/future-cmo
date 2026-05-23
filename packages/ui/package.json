@@ -8,10 +8,13 @@
     "./button": "./src/components/button.tsx",
     "./card": "./src/components/card.tsx",
     "./checkbox": "./src/components/checkbox.tsx",
+    "./dialog": "./src/components/dialog.tsx",
     "./form": "./src/components/form.tsx",
     "./input": "./src/components/input.tsx",
     "./label": "./src/components/label.tsx",
+    "./select": "./src/components/select.tsx",
     "./separator": "./src/components/separator.tsx",
+    "./sheet": "./src/components/sheet.tsx",
     "./sonner": "./src/components/sonner.tsx",
     "./lib/utils": "./src/lib/utils.ts",
     "./styles/globals.css": "./src/styles/globals.css"
@@ -22,7 +25,9 @@
   "dependencies": {
     "@base-ui/react": "^1.5.0",
     "@hookform/resolvers": "^5.4.0",
+    "@radix-ui/react-dialog": "^1.1.7",
     "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-select": "^2.1.6",
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

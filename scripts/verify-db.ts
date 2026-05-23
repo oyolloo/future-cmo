@@ -12,7 +12,8 @@ async function main() {
   const rows = await sql<{ table_name: string; column_count: number }[]>`
     SELECT table_name, COUNT(column_name)::int AS column_count
     FROM information_schema.columns
-    WHERE table_schema = 'public' AND table_name IN ('users', 'sessions')
+    WHERE table_schema = 'public'
+      AND table_name NOT LIKE '__drizzle%'
     GROUP BY table_name
     ORDER BY table_name;
   `;
@@ -25,7 +26,8 @@ async function main() {
   const idx = await sql<{ indexname: string; tablename: string }[]>`
     SELECT indexname, tablename
     FROM pg_indexes
-    WHERE schemaname = 'public' AND tablename IN ('users', 'sessions')
+    WHERE schemaname = 'public'
+      AND tablename NOT LIKE '__drizzle%'
     ORDER BY tablename, indexname;
   `;
 

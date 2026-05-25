@@ -2,6 +2,17 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@kit/database", "@kit/shared", "@kit/ui"],
+  // Native Rust binaries inside `impit` (browser-fingerprinted HTTP client
+  // used by `google-maps-review-scraper`) can't be bundled by Turbopack.
+  // Marking the chain as external loads them via Node's require at
+  // runtime — server-side only, never ships to the client.
+  serverExternalPackages: [
+    "google-maps-review-scraper",
+    "impit",
+    "simple-wappalyzer",
+    "playwright",
+    "playwright-core",
+  ],
   images: {
     remotePatterns: [
       {

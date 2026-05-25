@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { findSharedReportByToken } from "@kit/database";
 
 import { MarketingAuditReport } from "@/app/(app)/gm-prospecting/_components/marketing-audit-report";
-import { loadAndScore } from "@/app/(app)/gm-prospecting/report/page";
+import { loadAndScore } from "@/app/(app)/gm-prospecting/_lib/load-and-score";
 
 export const metadata = {
   title: "Marketing Audit Report",
@@ -35,6 +35,7 @@ export default async function PublicReportPage({
         sections={sections}
         failures={failures}
         mode="public"
+        businessDetailBasePath={`/r/${token}/business`}
       />
       <footer className="mx-auto max-w-7xl px-8 pb-10" data-print-hide>
         <p className="text-comment">

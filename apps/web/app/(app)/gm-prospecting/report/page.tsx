@@ -1,28 +1,31 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
-import {
-  aggregateAuditScores,
-  businessOverall,
-  scoreAuditSections,
-} from "@/lib/audit/score";
 import { requireUser } from "@/lib/auth/session";
-import { getPlaceDetails, type PlaceDetails } from "@/lib/maps/places";
+import { saveReport } from "@/lib/reports/service";
+import type { ReportSnapshot } from "@/lib/reports/types";
 
-import {
-  MarketingAuditReport,
-  type RankedBusiness,
-} from "../_components/marketing-audit-report";
+import { loadAndScore } from "../_lib/load-and-score";
 
 export const metadata = {
-  title: "Marketing Audit Report · future-cmo",
+  title: "Generating Marketing Audit Report · future-cmo",
 };
 
-export default async function ReportPage({
+/**
+ * Generator-then-redirect. `?placeId=X&placeId=Y` triggers:
+ *   1. Fetch + score (Google Places + PageSpeed, cached upstream)
+ *   2. Persist snapshot to prospect_reports
+ *   3. Redirect to /gm-prospecting/reports/[id] — the durable URL
+ *
+ * The redirect target reads from DB only — no further upstream calls on
+ * re-view.
+ */
+export default async function GenerateReportPage({
   searchParams,
 }: {
   searchParams: Promise<{ placeId?: string | string[] }>;
 }) {
-  await requireUser();
+  const user = await requireUser();
 
   const raw = (await searchParams).placeId;
   const placeIds = Array.isArray(raw) ? raw : raw ? [raw] : [];
@@ -34,26 +37,17 @@ export default async function ReportPage({
   const { businesses, overall, sections, failures } =
     await loadAndScore(placeIds);
 
-  return (
-    <>
-      <div className="px-8 pt-10" data-print-hide>
-        <Link
-          href="/gm-prospecting"
-          className="text-comment hover:text-foreground"
-        >
-          ← back to prospecting
-        </Link>
-      </div>
-      <MarketingAuditReport
-        businesses={businesses}
-        overall={overall}
-        sections={sections}
-        failures={failures}
-        mode="authenticated"
-        placeIds={placeIds}
-      />
-    </>
-  );
+  const snapshot: ReportSnapshot = {
+    v: 1,
+    businesses,
+    overall,
+    sections,
+    failures,
+    generatedAt: new Date().toISOString(),
+  };
+
+  const report = await saveReport(user.id, placeIds, snapshot);
+  redirect(`/gm-prospecting/reports/${report.id}`);
 }
 
 function EmptyReport() {
@@ -76,37 +70,4 @@ function EmptyReport() {
       </header>
     </div>
   );
-}
-
-export async function loadAndScore(placeIds: string[]): Promise<{
-  businesses: RankedBusiness[];
-  overall: number;
-  sections: ReturnType<typeof aggregateAuditScores>["sections"];
-  failures: number;
-}> {
-  const settled = await Promise.allSettled(
-    placeIds.map((id) => getPlaceDetails(id)),
-  );
-  const failures = settled.filter((r) => r.status === "rejected").length;
-
-  const businesses: RankedBusiness[] = settled
-    .filter(
-      (r): r is PromiseFulfilledResult<PlaceDetails> =>
-        r.status === "fulfilled",
-    )
-    .map((r) => {
-      const sections = scoreAuditSections(r.value);
-      return {
-        details: r.value,
-        sections,
-        overall: businessOverall(sections),
-      };
-    })
-    .sort((a, b) => a.overall - b.overall); // weakest first = biggest opportunity
-
-  const { overall, sections } = aggregateAuditScores(
-    businesses.map((b) => b.sections),
-  );
-
-  return { businesses, overall, sections, failures };
 }

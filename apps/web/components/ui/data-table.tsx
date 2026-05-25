@@ -10,8 +10,12 @@ import {
   type RowData,
   type SortingState,
 } from "@tanstack/react-table";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
+
+import {
+  ChevronLeftIcon as ChevronLeft,
+  ChevronRightIcon as ChevronRight,
+} from "@kit/ui/icons";
 
 declare module "@tanstack/react-table" {
   // Per-column horizontal alignment via columnDef.meta.align.
@@ -219,9 +223,12 @@ export function DataTable<TData, TValue>({
       </div>
 
       {totalRows > 0 ? (
-        <div className="flex items-center justify-between gap-4">
+        <div
+          data-print-hide
+          className="flex items-center justify-between gap-4"
+        >
           <p className="text-comment">
-            // showing {startRow}–{endRow} of {totalRows}
+            {`// showing ${startRow}–${endRow} of ${totalRows}`}
           </p>
 
           <div className="flex items-center gap-3">

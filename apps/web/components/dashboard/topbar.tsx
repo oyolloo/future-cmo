@@ -1,11 +1,16 @@
 "use client";
 
-import { LogOut, Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@kit/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@kit/ui/sheet";
+import { LogoutIcon as LogOut, MenuIcon as Menu } from "@kit/ui/icons";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@kit/ui/sheet";
 
 import { useLogout } from "@/lib/auth/hooks";
 
@@ -44,6 +49,7 @@ export function Topbar({ user }: { user: TopbarUser }) {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-72 p-0">
+            <SheetTitle className="sr-only">Navigation</SheetTitle>
             <SidebarContent onNavigate={() => setMobileNavOpen(false)} />
           </SheetContent>
         </Sheet>

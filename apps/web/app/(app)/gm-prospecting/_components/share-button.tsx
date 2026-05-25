@@ -1,8 +1,9 @@
 "use client";
 
-import { Check, Share2 } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+
+import { CheckIcon as Check, ShareIcon as Share2 } from "@kit/ui/icons";
 
 import { createShareLinkAction } from "../_lib/actions";
 

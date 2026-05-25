@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText } from "lucide-react";
+import { FileTextIcon as FileText } from "@kit/ui/icons";
 
 export function PrintButton() {
   return (

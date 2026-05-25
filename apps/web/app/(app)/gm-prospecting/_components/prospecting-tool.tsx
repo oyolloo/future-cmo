@@ -2,18 +2,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import {
-  Building2,
-  Check,
-  Clock,
-  ExternalLink,
-  FileText,
-  Info,
-  MapPin,
-  Phone,
-  Plus,
-  Star,
-} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -27,6 +15,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@kit/ui/dialog";
+import {
+  BuildingIcon as Building2,
+  CheckIcon as Check,
+  ClockIcon as Clock,
+  ExternalLinkIcon as ExternalLink,
+  FileTextIcon as FileText,
+  InfoIcon as Info,
+  MapPinIcon as MapPin,
+  PhoneIcon as Phone,
+  PlusIcon as Plus,
+} from "@kit/ui/icons";
 import { Input } from "@kit/ui/input";
 import { Label } from "@kit/ui/label";
 import { cn } from "@kit/ui/lib/utils";
@@ -39,6 +38,7 @@ import {
 } from "@kit/ui/select";
 
 import { DataTable } from "@/components/ui/data-table";
+import { StarRating } from "@/components/ui/star-rating";
 
 import {
   addProspectAction,
@@ -181,7 +181,7 @@ export function ProspectingTool() {
               value={String(maxResults)}
               onValueChange={(v: string) => setMaxResults(Number(v))}
             >
-              <SelectTrigger id="limit" className="w-full">
+              <SelectTrigger id="limit" className="w-full mb-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -369,8 +369,8 @@ function buildColumns(
           return <span className="text-xs text-muted-foreground">—</span>;
         }
         return (
-          <span className="inline-flex items-center gap-1 text-sm">
-            <Star className="size-3.5 fill-primary text-primary" />
+          <span className="inline-flex items-center gap-2 text-sm">
+            <StarRating rating={r.rating} size="sm" showValue={false} />
             <span className="font-medium">{r.rating.toFixed(1)}</span>
             <span className="text-xs text-muted-foreground">
               ({r.reviewCount ?? 0})
@@ -573,8 +573,8 @@ function DetailDialog({
 
               <div className="flex flex-wrap items-center gap-2">
                 {row.rating != null ? (
-                  <span className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-0.5 text-xs">
-                    <Star className="size-3.5 fill-primary text-primary" />
+                  <span className="inline-flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2 py-1 text-xs">
+                    <StarRating rating={row.rating} size="sm" showValue={false} />
                     <span className="font-medium">{row.rating.toFixed(1)}</span>
                     <span className="text-muted-foreground">
                       ({row.reviewCount ?? 0} reviews)
@@ -741,10 +741,12 @@ function DetailsSections({
                     <span className="truncate text-sm font-medium">
                       {review.authorName}
                     </span>
-                    <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground">
-                      <Star className="size-3 fill-primary text-primary" />
-                      {review.rating}
-                    </span>
+                    <StarRating
+                      rating={review.rating}
+                      size="xs"
+                      showValue
+                      valueLabel={`(${review.rating})`}
+                    />
                   </div>
                   <span className="font-mono text-[0.625rem] text-muted-foreground">
                     {review.relativeTime}

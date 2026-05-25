@@ -1,7 +1,8 @@
 "use client";
 
-import { MapPin } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
+
+import { MapPinIcon as MapPin } from "@kit/ui/icons";
 
 import { Input } from "@kit/ui/input";
 import { cn } from "@kit/ui/lib/utils";

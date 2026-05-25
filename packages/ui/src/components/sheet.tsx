@@ -3,8 +3,8 @@
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { cva, type VariantProps } from "class-variance-authority"
-import { XIcon } from "lucide-react"
 
+import { CloseIcon } from "../icons"
 import { cn } from "../lib/utils"
 
 const Sheet = DialogPrimitive.Root
@@ -72,7 +72,7 @@ function SheetContent({
             className="absolute top-4 right-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring/50 disabled:pointer-events-none"
             aria-label="Close"
           >
-            <XIcon className="size-4" />
+            <CloseIcon className="size-4" />
           </DialogPrimitive.Close>
         ) : null}
       </DialogPrimitive.Content>

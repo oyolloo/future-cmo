@@ -1,5 +1,7 @@
 import type { PlaceDetails, PlaceSummary } from "@/lib/maps/places";
 
+import type { WebsiteAudit } from "./website-audit";
+
 export type ConversionBand = "unlikely" | "moderate" | "strong";
 
 export type ConversionScore = {
@@ -92,13 +94,16 @@ export function auditBand(score: number): AuditBand {
 }
 
 /**
- * Compute per-section audit scores for a single business using the data
- * we have from Places Details. Sections without a scoring implementation
- * yet (Techno Stack, Listings, SEO) return 0% with status "placeholder"
- * so the UI can render them differently.
+ * Compute per-section audit scores for a single business. Pass an optional
+ * `WebsiteAudit` (from `getWebsiteAudit`) to flip Techno Stack, Website
+ * Performance, and SEO Analysis from placeholder to real scores.
+ *
+ * Listings stays a placeholder until we wire NAP scanning across Yelp /
+ * Bing / Apple Maps (paid scrapers or partner APIs).
  */
 export function scoreAuditSections(
   details: PlaceDetails,
+  audit?: WebsiteAudit | null,
 ): AuditSectionScore[] {
   // Business Details — fundamental NAP + categorization fields.
   const bdSignals = [
@@ -128,9 +133,76 @@ export function scoreAuditSections(
   ];
   const onlineReputation = pct(orSignals);
 
-  // Website Performance — has website is the only signal until we wire
-  // PageSpeed Insights in a later batch.
-  const websitePerformance = details.website ? 100 : 0;
+  // Techno Stack — derived from the HTML probe + SSL check.
+  let technoStack = 0;
+  let technoStatus: AuditSectionStatus = "placeholder";
+  if (audit) {
+    const tech = audit.technoStack;
+    const tsSignals = [
+      // any modern build (CMS / framework / e-commerce)
+      tech.some((t) =>
+        [
+          "WordPress",
+          "Shopify",
+          "Wix",
+          "Squarespace",
+          "Webflow",
+          "Magento",
+          "WooCommerce",
+          "BigCommerce",
+          "Next.js",
+          "React",
+          "Nuxt.js",
+        ].includes(t),
+      ),
+      // analytics installed
+      tech.some((t) =>
+        ["Google Analytics", "Google Tag Manager", "Mixpanel"].includes(t),
+      ),
+      // marketing pixels
+      tech.some((t) =>
+        ["Meta Pixel", "LinkedIn Insight", "Hotjar"].includes(t),
+      ),
+      // structured markup (SEO-aware)
+      tech.includes("Schema.org JSON-LD"),
+      // SSL
+      details.website?.startsWith("https://") ?? false,
+    ];
+    technoStack = pct(tsSignals);
+    technoStatus = "implemented";
+  }
+
+  // Website Performance — Lighthouse mobile score from PageSpeed if we
+  // got it; fall back to "has website" binary so a site that responded
+  // but didn't audit doesn't read as fully broken.
+  let websitePerformance = 0;
+  let perfStatus: AuditSectionStatus = "implemented";
+  if (audit?.pagespeedScore != null) {
+    websitePerformance = audit.pagespeedScore;
+  } else if (details.website) {
+    // We couldn't measure — give partial credit so 100% missing-site rows
+    // don't tie with 100% measured rows. 50 = "site exists, score unknown".
+    websitePerformance = 50;
+    perfStatus = "placeholder";
+  }
+
+  // SEO Analysis — on-page checks against the fetched HTML.
+  let seo = 0;
+  let seoStatus: AuditSectionStatus = "placeholder";
+  if (audit?.seoSignals) {
+    const sig = audit.seoSignals;
+    const seoSignals = [
+      sig.hasTitle,
+      sig.titleLength >= 10 && sig.titleLength <= 60,
+      sig.hasMetaDescription,
+      sig.metaDescriptionLength >= 50 && sig.metaDescriptionLength <= 160,
+      sig.hasH1,
+      sig.hasOpenGraph,
+      sig.hasStructuredData,
+    ];
+    seo = pct(seoSignals);
+    seoStatus = "implemented";
+  }
 
   return [
     {
@@ -142,8 +214,8 @@ export function scoreAuditSections(
     {
       key: "technoStack",
       label: "Techno Stack",
-      score: 0,
-      status: "placeholder",
+      score: technoStack,
+      status: technoStatus,
     },
     {
       key: "gbp",
@@ -162,13 +234,13 @@ export function scoreAuditSections(
       key: "websitePerformance",
       label: "Website Performance",
       score: websitePerformance,
-      status: "implemented",
+      status: perfStatus,
     },
     {
       key: "seoAnalysis",
       label: "SEO Analysis",
-      score: 0,
-      status: "placeholder",
+      score: seo,
+      status: seoStatus,
     },
   ];
 }

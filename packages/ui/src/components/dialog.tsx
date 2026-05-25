@@ -2,8 +2,8 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { XIcon } from "lucide-react"
 
+import { CloseIcon } from "../icons"
 import { cn } from "../lib/utils"
 
 const Dialog = DialogPrimitive.Root
@@ -51,7 +51,7 @@ function DialogContent({
           className="absolute top-4 right-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring/50 disabled:pointer-events-none"
           aria-label="Close"
         >
-          <XIcon className="size-4" />
+          <CloseIcon className="size-4" />
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>
     </DialogPortal>

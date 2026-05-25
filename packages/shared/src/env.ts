@@ -23,6 +23,25 @@ const EnvSchema = z.object({
     .string()
     .optional()
     .transform((v) => (v && v.length > 0 ? v : undefined)),
+
+  // OpenRouter — single LLM gateway covering Anthropic / OpenAI / Google /
+  // Meta / Mistral / DeepSeek etc. Used by AI-powered tools. Empty string
+  // treated as unset; LLM helpers throw an actionable error at call time
+  // when missing, so the absence doesn't break unrelated routes.
+  OPENROUTER_API_KEY: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : undefined)),
+
+  // 32-byte symmetric key (base64) for AES-256-GCM encryption of secrets
+  // at rest — currently the Shopify Partner access token. Generate with:
+  //   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+  // Empty string treated as unset; Shopify settings page refuses to save
+  // credentials without it.
+  SHOPIFY_ENCRYPTION_KEY: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : undefined)),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

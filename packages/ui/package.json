@@ -20,6 +20,7 @@
     "./sheet": "./src/components/sheet.tsx",
     "./skeleton": "./src/components/skeleton.tsx",
     "./sonner": "./src/components/sonner.tsx",
+    "./video-player": "./src/components/video-player.tsx",
     "./lib/utils": "./src/lib/utils.ts",
     "./styles/globals.css": "./src/styles/globals.css"
   },

@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 
 import { Button } from "@kit/ui/button";
 import { cn } from "@kit/ui/lib/utils";
+import { MultiEmailInput, isValidEmail } from "@kit/ui/multi-email-input";
 
 import { DataTable } from "@/components/ui/data-table";
 
@@ -141,6 +142,7 @@ function ChurnEmailAction({
   const [menuOpen, setMenuOpen] = useState(false);
   const [emailBody, setEmailBody] = useState("");
   const [subject, setSubject] = useState("");
+  const [recipients, setRecipients] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
   const [isSending, startSendTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -153,6 +155,7 @@ function ChurnEmailAction({
     setOpen(true);
     setError(null);
     setSendResult(null);
+    setRecipients(event.shopEmail ? [event.shopEmail] : []);
 
     setSubject(
       type === "ask-why"
@@ -179,27 +182,36 @@ function ChurnEmailAction({
     });
   };
 
+  const validRecipients = recipients.filter(isValidEmail);
+  const hasInvalid = recipients.length !== validRecipients.length;
+
   const onSend = () => {
-    if (!event.shopEmail || !emailBody) return;
+    if (validRecipients.length === 0 || !emailBody) return;
     setSendResult(null);
 
     if (emailConfigured) {
       startSendTransition(async () => {
-        const res = await sendAppEmailAction({
-          appGid,
-          to: event.shopEmail!,
-          subject,
-          body: emailBody,
-        });
-        if (res.ok) {
-          setSendResult({ type: "ok", msg: `Sent to ${event.shopEmail}` });
+        const results = await Promise.all(
+          validRecipients.map((to) =>
+            sendAppEmailAction({ appGid, to, subject, body: emailBody }),
+          ),
+        );
+        const failed = results.filter((r) => !r.ok);
+        if (failed.length === 0) {
+          setSendResult({
+            type: "ok",
+            msg: `Sent to ${validRecipients.length} recipient${validRecipients.length > 1 ? "s" : ""}`,
+          });
           setTimeout(() => setOpen(false), 1500);
         } else {
-          setSendResult({ type: "err", msg: res.error.message });
+          setSendResult({
+            type: "err",
+            msg: `${failed.length}/${results.length} failed: ${failed[0]!.ok ? "" : failed[0]!.error.message}`,
+          });
         }
       });
     } else {
-      const mailto = `mailto:${encodeURIComponent(event.shopEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
+      const mailto = `mailto:${encodeURIComponent(validRecipients.join(","))}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
       window.open(mailto, "_blank");
       setOpen(false);
     }
@@ -271,16 +283,23 @@ function ChurnEmailAction({
             <div className="mt-4 space-y-3">
               {/* To */}
               <div>
-                <p className="text-[0.625rem] text-muted-foreground">TO</p>
-                {event.shopEmail ? (
-                  <p className="mt-1 font-mono text-xs text-foreground">
-                    {event.shopEmail}
-                  </p>
-                ) : (
-                  <p className="mt-1 text-xs text-destructive">
-                    No email on file — add one in the Stores tab first
-                  </p>
-                )}
+                <div className="flex items-center justify-between">
+                  <p className="text-[0.625rem] text-muted-foreground">TO</p>
+                  {hasInvalid ? (
+                    <p className="text-[0.625rem] text-destructive">
+                      {recipients.length - validRecipients.length} invalid
+                    </p>
+                  ) : null}
+                </div>
+                <MultiEmailInput
+                  value={recipients}
+                  onChange={setRecipients}
+                  placeholder="add recipients (comma separated, or paste)"
+                  className="mt-1"
+                />
+                <p className="text-comment mt-1">
+                  {"// type, paste, or press Enter — supports multiple recipients"}
+                </p>
               </div>
 
               {/* Subject */}
@@ -351,10 +370,14 @@ function ChurnEmailAction({
                   </Button>
                   <Button
                     size="sm"
-                    disabled={isPending || isSending || !emailBody || !event.shopEmail}
+                    disabled={isPending || isSending || !emailBody || validRecipients.length === 0}
                     onClick={onSend}
                   >
-                    {isSending ? "Sending…" : "Send email"}
+                    {isSending
+                      ? "Sending…"
+                      : validRecipients.length > 1
+                        ? `Send (${validRecipients.length})`
+                        : "Send email"}
                   </Button>
                 </div>
               </div>

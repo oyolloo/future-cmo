@@ -5,6 +5,7 @@ import { useRef, useState, useTransition } from "react";
 
 import { Button } from "@kit/ui/button";
 import { cn } from "@kit/ui/lib/utils";
+import { MultiEmailInput, isValidEmail } from "@kit/ui/multi-email-input";
 
 import { DataTable } from "@/components/ui/data-table";
 
@@ -293,6 +294,11 @@ function EmailAction({ store, appName }: { store: StoreRow; appName: string }) {
 
   const [subject, setSubject] = useState(defaultSubject);
   const [body, setBody] = useState(defaultBody);
+  const [recipients, setRecipients] = useState<string[]>(
+    store.email ? [store.email] : [],
+  );
+  const validRecipients = recipients.filter(isValidEmail);
+  const hasInvalid = recipients.length !== validRecipients.length;
 
   if (!store.email && !open) {
     return (
@@ -320,7 +326,7 @@ function EmailAction({ store, appName }: { store: StoreRow; appName: string }) {
     );
   }
 
-  const mailto = `mailto:${encodeURIComponent(store.email ?? "")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const mailto = `mailto:${encodeURIComponent(validRecipients.join(","))}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
   return (
     <div
@@ -346,8 +352,23 @@ function EmailAction({ store, appName }: { store: StoreRow; appName: string }) {
 
         <div className="mt-4 space-y-3">
           <div>
-            <p className="text-[0.625rem] text-muted-foreground">TO</p>
-            <p className="mt-1 font-mono text-xs text-foreground">{store.email}</p>
+            <div className="flex items-center justify-between">
+              <p className="text-[0.625rem] text-muted-foreground">TO</p>
+              {hasInvalid ? (
+                <p className="text-[0.625rem] text-destructive">
+                  {recipients.length - validRecipients.length} invalid
+                </p>
+              ) : null}
+            </div>
+            <MultiEmailInput
+              value={recipients}
+              onChange={setRecipients}
+              placeholder="add recipients (comma separated, or paste)"
+              className="mt-1"
+            />
+            <p className="text-comment mt-1">
+              {"// type, paste, or press Enter — supports multiple recipients"}
+            </p>
           </div>
 
           <div>
@@ -376,9 +397,17 @@ function EmailAction({ store, appName }: { store: StoreRow; appName: string }) {
               <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <a href={mailto} onClick={() => setOpen(false)}>
-                <Button size="sm">
-                  Send email
+              <a
+                href={validRecipients.length > 0 ? mailto : undefined}
+                onClick={(e) => {
+                  if (validRecipients.length === 0) e.preventDefault();
+                  else setOpen(false);
+                }}
+              >
+                <Button size="sm" disabled={validRecipients.length === 0}>
+                  {validRecipients.length > 1
+                    ? `Send (${validRecipients.length})`
+                    : "Send email"}
                 </Button>
               </a>
             </div>

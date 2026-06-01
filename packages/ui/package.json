@@ -13,6 +13,7 @@
     "./icons": "./src/icons.tsx",
     "./input": "./src/components/input.tsx",
     "./label": "./src/components/label.tsx",
+    "./multi-email-input": "./src/components/multi-email-input.tsx",
     "./pagination": "./src/components/pagination.tsx",
     "./progress": "./src/components/progress.tsx",
     "./select": "./src/components/select.tsx",

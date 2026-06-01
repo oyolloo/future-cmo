@@ -85,6 +85,23 @@ const categories: NavCategory[] = [
           },
         ],
       },
+      {
+        id: "outreach",
+        label: "Outreach",
+        icon: Megaphone,
+        items: [
+          {
+            href: "/tools/email-finder",
+            label: "Email Finder",
+            icon: Globe,
+          },
+          {
+            href: "/tools/email-validator",
+            label: "Email Validator",
+            icon: ListChecks,
+          },
+        ],
+      },
     ],
   },
   {

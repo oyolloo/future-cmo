@@ -17,3 +17,4 @@ export * from "./shopify-shops";
 export * from "./saved-personas";
 export * from "./website-audits";
 export * from "./shopify-app-email-config";
+export * from "./automation-jobs";

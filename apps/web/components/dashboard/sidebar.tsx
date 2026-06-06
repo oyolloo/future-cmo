@@ -9,6 +9,7 @@ import {
   ActivityIcon as Activity,
   BarChartIcon as BarChart3,
   BeakerIcon as Beaker,
+  BuildingIcon,
   ChevronDownIcon as ChevronDown,
   CircleArrowUpIcon as CircleArrowUp,
   CodeIcon as Code2,
@@ -83,6 +84,11 @@ const categories: NavCategory[] = [
             label: "Reports",
             icon: FileText,
           },
+          {
+            href: "/gm-prospecting/automation",
+            label: "Automation",
+            icon: Beaker,
+          },
         ],
       },
       {
@@ -90,6 +96,11 @@ const categories: NavCategory[] = [
         label: "Outreach",
         icon: Megaphone,
         items: [
+          {
+            href: "/tools/company-finder",
+            label: "Company Finder",
+            icon: BuildingIcon,
+          },
           {
             href: "/tools/email-finder",
             label: "Email Finder",

@@ -113,6 +113,20 @@
       "when": 1779635381977,
       "tag": "0015_damp_robin_chapel",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1780728371287,
+      "tag": "0016_automation-jobs",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1780728900000,
+      "tag": "0017_automation_custom_fields",
+      "breakpoints": true
     }
   ]
 }

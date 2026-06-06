@@ -1,10 +1,13 @@
 import Link from "next/link";
 
+import { listAutomationJobsByUser } from "@kit/database";
+
 import { buttonVariants } from "@kit/ui/button";
 
 import { requireUser } from "@/lib/auth/session";
 import { listReports } from "@/lib/reports/service";
 
+import { AutomationJobsTable } from "./_components/automation-jobs-table";
 import { ReportsTable } from "./_components/reports-table";
 
 export const metadata = {
@@ -13,7 +16,10 @@ export const metadata = {
 
 export default async function ReportsListPage() {
   const user = await requireUser();
-  const rows = await listReports(user.id);
+  const [rows, jobs] = await Promise.all([
+    listReports(user.id),
+    listAutomationJobsByUser(user.id),
+  ]);
 
   return (
     <div className="mx-auto max-w-6xl px-8 py-10">
@@ -24,19 +30,55 @@ export default async function ReportsListPage() {
             Reports
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Every audit you generate is saved here — open one to view without
-            re-fetching from Google.
+            Every audit you generate and every automation job is saved here —
+            open one to view results without re-fetching from Google.
           </p>
         </div>
-        <Link href="/gm-prospecting" className={buttonVariants()}>
-          New search
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/gm-prospecting/automation"
+            className={buttonVariants({ variant: "outline" })}
+          >
+            New automation
+          </Link>
+          <Link href="/gm-prospecting" className={buttonVariants()}>
+            New search
+          </Link>
+        </div>
       </header>
 
+      {/* Automation jobs (live status) */}
+      {jobs.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="text-label">Automation jobs · {jobs.length}</h2>
+          <div className="mt-3">
+            <AutomationJobsTable
+              jobs={jobs.map((j) => ({
+                id: j.id,
+                name: j.name,
+                status: j.status as
+                  | "queued"
+                  | "running"
+                  | "completed"
+                  | "failed"
+                  | "stopped",
+                taskCount: (j.tasks as unknown[]).length,
+                currentTaskIndex: j.currentTaskIndex,
+                resultCount: (j.results as unknown[]).length,
+                createdAt: j.createdAt.toISOString(),
+                completedAt: j.completedAt ? j.completedAt.toISOString() : null,
+              }))}
+            />
+          </div>
+        </section>
+      ) : null}
+
+      {/* Saved reports */}
       <section className="mt-8">
-        {rows.length === 0 ? (
+        {rows.length > 0 ? <h2 className="text-label mb-3">Saved reports · {rows.length}</h2> : null}
+        {rows.length === 0 && jobs.length === 0 ? (
           <EmptyState />
-        ) : (
+        ) : rows.length === 0 ? null : (
           <ReportsTable rows={rows} />
         )}
       </section>

@@ -42,6 +42,21 @@ const EnvSchema = z.object({
     .string()
     .optional()
     .transform((v) => (v && v.length > 0 ? v : undefined)),
+
+  // Inngest — durable background job runner. Used by GM Prospecting
+  // Automation to survive Vercel function timeouts and long delays.
+  // Both keys come from app.inngest.com → Manage. EVENT_KEY = send
+  // events; SIGNING_KEY = verify webhooks. Missing keys are tolerated
+  // so dev mode works without Inngest setup (only the automation
+  // feature breaks gracefully).
+  INNGEST_EVENT_KEY: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : undefined)),
+  INNGEST_SIGNING_KEY: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : undefined)),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

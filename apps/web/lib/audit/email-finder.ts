@@ -2,9 +2,12 @@ import "server-only";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
+export type Confidence = "high" | "medium" | "low";
+
 export type FoundEmail = {
   email: string;
-  /** Pages on the site where this email appeared. */
+  confidence: Confidence;
+  /** Pages / signals where this email appeared. */
   sources: string[];
 };
 
@@ -12,7 +15,7 @@ export type EmailFinderResult =
   | {
       ok: true;
       data: {
-        startUrl: string;
+        domain: string;
         pagesScanned: string[];
         emails: FoundEmail[];
         durationMs: number;
@@ -20,88 +23,89 @@ export type EmailFinderResult =
     }
   | { ok: false; error: { message: string } };
 
-// ─── Regex + filters ─────────────────────────────────────────────────
+// ─── Constants ───────────────────────────────────────────────────────
 
 const EMAIL_RE = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+const MAILTO_RE = /mailto:([^"'?\s<>]+)/gi;
 
-/** Reject obvious junk that matches the email regex but isn't a real address. */
-const BLACKLIST_PATTERNS = [
-  /@2x\./i, /@3x\./i,                          // retina image hashes
-  /@sentry\.io/i, /@example\.(com|org|net)/i, // placeholder / monitoring
-  /@your-?domain/i, /@yourcompany/i,
-  /noreply@/i, /no-reply@/i, /donotreply@/i,
-  /@sha256/i, /@sha512/i,                      // sometimes regex matches hashes
-  /\.(png|jpg|jpeg|webp|gif|svg|ico|woff2?|ttf|css|js|map)$/i,
-];
+/** Obfuscated pattern: "hello [at] acme [dot] com" */
+const OBFUSCATED_RE =
+  /\b([a-z0-9._%+-]+)\s*[\[\(]?\s*at\s*[\]\)]?\s*([a-z0-9.\-]+)\s*[\[\(]?\s*dot\s*[\]\)]?\s*([a-z]{2,})\b/gi;
 
-/** Slugs we'll proactively crawl in addition to the start URL. */
 const CONTACT_PATHS = [
+  "/",
   "/contact",
   "/contact-us",
+  "/contacts",
   "/about",
   "/about-us",
   "/team",
-  "/our-team",
-  "/company",
+  "/staff",
   "/support",
   "/help",
-  "/privacy",
   "/imprint",
   "/impressum",
 ];
 
+const COMMON_LOCAL_PARTS = [
+  "info",
+  "hello",
+  "contact",
+  "support",
+  "team",
+  "sales",
+  "admin",
+];
+
+/** Substrings that signal noise (tracking, CDN, monitoring). */
+const NOISE_RE =
+  /sentry|wixpress|googletagmanager|cloudfront|amazonaws|akamaized|fbcdn|cloudflare|gstatic|youtube|vimeo|@\d+x|sprite|favicon|jsdelivr|unpkg|gravatar|wp-content|wp-includes/i;
+
+/** File-extension tails that mean it's a URL, not an email. */
+const FILE_EXT_RE = /\.(png|jpe?g|gif|svg|webp|ico|css|js|map|woff2?|ttf|otf|mp4|webm|pdf|json|xml|html?)$/i;
+
+/** Generic role addresses that shouldn't get full HIGH credit even on the site. */
+const ROLE_NOREPLY_RE = /^(no-?reply|donotreply|mailer-daemon|postmaster)@/i;
+
+const FETCH_TIMEOUT_MS = 8000;
+const MAX_BODY_BYTES = 500_000;
+const USER_AGENT =
+  "Mozilla/5.0 (compatible; FutureCmoBot/1.0; +https://future-cmo.app)";
+
 // ─── Public ──────────────────────────────────────────────────────────
 
 export async function findEmailsOnWebsite(
-  rawUrl: string,
-  options: { maxPages?: number; timeoutMsPerPage?: number } = {},
+  rawDomain: string,
 ): Promise<EmailFinderResult> {
-  const startUrl = normaliseUrl(rawUrl);
-  if (!startUrl) {
-    return { ok: false, error: { message: "Invalid URL." } };
+  const domain = normaliseDomain(rawDomain);
+  if (!domain) {
+    return { ok: false, error: { message: "Invalid domain." } };
   }
 
-  const maxPages = options.maxPages ?? 8;
-  const timeoutMs = options.timeoutMsPerPage ?? 8000;
   const started = Date.now();
-
-  const origin = startUrl.origin;
+  const found = new Map<string, { confidence: Confidence; sources: Set<string> }>();
   const scanned: string[] = [];
-  const found = new Map<string, Set<string>>(); // email → pages it appeared on
 
-  // 1) Fetch the start page
-  const startHtml = await fetchPage(startUrl.toString(), timeoutMs);
-  if (!startHtml.ok) {
-    return { ok: false, error: { message: startHtml.error } };
+  // ── 1. Site scrape ───────────────────────────────────────────────
+  await scrapeSite(domain, found, scanned);
+
+  // ── 2. Search engine (DuckDuckGo HTML) ───────────────────────────
+  await scrapeSearchEngine(domain, found, scanned);
+
+  // ── 3. Common-pattern fallback ───────────────────────────────────
+  if (found.size === 0) {
+    for (const local of COMMON_LOCAL_PARTS) {
+      upsert(found, `${local}@${domain}`, "low", "common pattern");
+    }
   }
-  scanned.push(startUrl.toString());
-  collectEmails(startHtml.body, startUrl.toString(), found);
 
-  // 2) Find candidate inner links — prefer contact/about/team
-  const candidateLinks = pickCandidateLinks(
-    startHtml.body,
-    origin,
-    maxPages - 1,
-  );
-
-  // 3) Fetch each candidate in parallel
-  await Promise.all(
-    candidateLinks.map(async (url) => {
-      const res = await fetchPage(url, timeoutMs);
-      if (!res.ok) return;
-      scanned.push(url);
-      collectEmails(res.body, url, found);
-    }),
-  );
-
-  const emails: FoundEmail[] = [...found.entries()]
-    .map(([email, sources]) => ({ email, sources: [...sources] }))
-    .sort((a, b) => b.sources.length - a.sources.length);
+  // ── Rank ─────────────────────────────────────────────────────────
+  const emails = rankFindings(domain, found);
 
   return {
     ok: true,
     data: {
-      startUrl: startUrl.toString(),
+      domain,
       pagesScanned: scanned,
       emails,
       durationMs: Date.now() - started,
@@ -109,112 +113,189 @@ export async function findEmailsOnWebsite(
   };
 }
 
+// ─── Signal 1: Site scrape ───────────────────────────────────────────
+
+async function scrapeSite(
+  domain: string,
+  found: Map<string, { confidence: Confidence; sources: Set<string> }>,
+  scanned: string[],
+): Promise<void> {
+  // Sequential per-target to be polite — single domain, no parallel hammering.
+  for (const path of CONTACT_PATHS) {
+    const url = `https://${domain}${path}`;
+    const html = await fetchPage(url);
+    if (html === null) continue;
+    scanned.push(url);
+
+    // mailto: → HIGH (someone explicitly published it)
+    for (const m of html.matchAll(MAILTO_RE)) {
+      const raw = (m[1] ?? "").trim();
+      // Strip mailto params: mailto:foo@bar.com?subject=…
+      const email = raw.split("?")[0]!.toLowerCase();
+      if (!isClean(email)) continue;
+      upsert(found, email, "high", url);
+    }
+
+    // Visible text — HIGH if same-domain, MEDIUM otherwise
+    for (const m of html.matchAll(EMAIL_RE)) {
+      const email = m[0].toLowerCase();
+      if (!isClean(email)) continue;
+      const conf: Confidence = email.endsWith(`@${domain}`) ? "high" : "medium";
+      upsert(found, email, conf, url);
+    }
+
+    // Obfuscated emails
+    for (const m of html.matchAll(OBFUSCATED_RE)) {
+      const local = m[1]?.toLowerCase();
+      const host = m[2]?.toLowerCase();
+      const tld = m[3]?.toLowerCase();
+      if (!local || !host || !tld) continue;
+      const email = `${local}@${host}.${tld}`;
+      if (!isClean(email)) continue;
+      const conf: Confidence = email.endsWith(`@${domain}`) ? "high" : "medium";
+      upsert(found, email, conf, `${url} (obfuscated)`);
+    }
+  }
+}
+
+// ─── Signal 2: DuckDuckGo HTML search ────────────────────────────────
+
+async function scrapeSearchEngine(
+  domain: string,
+  found: Map<string, { confidence: Confidence; sources: Set<string> }>,
+  scanned: string[],
+): Promise<void> {
+  // Phrase-search literal "@domain" to filter most noise from results.
+  const q = encodeURIComponent(`"@${domain}"`);
+  const url = `https://html.duckduckgo.com/html/?q=${q}`;
+
+  const html = await fetchPage(url);
+  if (html === null) return;
+  scanned.push("duckduckgo.com (search)");
+
+  for (const m of html.matchAll(EMAIL_RE)) {
+    const email = m[0].toLowerCase();
+    // Only keep same-domain hits from search noise.
+    if (!email.endsWith(`@${domain}`)) continue;
+    if (!isClean(email)) continue;
+    upsert(found, email, "medium", "duckduckgo.com");
+  }
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────
 
-function normaliseUrl(raw: string): URL | null {
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
+function normaliseDomain(raw: string): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim().toLowerCase();
+  // Strip protocol, path, query, leading www, trailing slashes.
   const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   try {
-    return new URL(withScheme);
+    const u = new URL(withScheme);
+    const host = u.hostname.replace(/^www\./, "");
+    // Domain must contain a dot.
+    if (!host.includes(".")) return null;
+    return host;
   } catch {
     return null;
   }
 }
 
-async function fetchPage(
-  url: string,
-  timeoutMs: number,
-): Promise<{ ok: true; body: string } | { ok: false; error: string }> {
+async function fetchPage(url: string): Promise<string | null> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(url, {
       signal: controller.signal,
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-        Accept: "text/html",
+        "User-Agent": USER_AGENT,
+        Accept: "text/html,application/xhtml+xml",
       },
       redirect: "follow",
       cache: "no-store",
     });
     clearTimeout(timer);
-    if (!res.ok) {
-      return { ok: false, error: `HTTP ${res.status} on ${url}` };
+    if (!res.ok) return null;
+
+    // Cap body size — read up to MAX_BODY_BYTES, throw away the rest.
+    const reader = res.body?.getReader();
+    if (!reader) return await res.text();
+
+    const decoder = new TextDecoder();
+    let buf = "";
+    let total = 0;
+    while (total < MAX_BODY_BYTES) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      buf += decoder.decode(value, { stream: true });
     }
-    const body = await res.text();
-    return { ok: true, body };
-  } catch (err) {
+    try { reader.cancel(); } catch { /* ignore */ }
+    return buf;
+  } catch {
     clearTimeout(timer);
-    if (err instanceof Error && err.name === "AbortError") {
-      return { ok: false, error: `Timed out fetching ${url}` };
-    }
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : "Fetch failed",
-    };
+    return null;
   }
 }
 
-function pickCandidateLinks(
-  html: string,
-  origin: string,
-  maxCount: number,
-): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-
-  // First pass — prioritise common contact-style slugs
-  for (const path of CONTACT_PATHS) {
-    if (out.length >= maxCount) break;
-    const url = origin + path;
-    if (!seen.has(url)) {
-      seen.add(url);
-      out.push(url);
-    }
-  }
-
-  // Second pass — scrape <a href> links from the start page, same-origin only
-  const linkRe = /<a[^>]*href=["']([^"'#]+)["']/gi;
-  let m: RegExpExecArray | null;
-  while ((m = linkRe.exec(html)) !== null) {
-    if (out.length >= maxCount) break;
-    const raw = m[1];
-    if (!raw) continue;
-    try {
-      const u = new URL(raw, origin);
-      if (u.origin !== origin) continue;
-      const text = u.toString().split("#")[0]!;
-      if (!seen.has(text) && /contact|about|team|support|help|imprint/i.test(text)) {
-        seen.add(text);
-        out.push(text);
-      }
-    } catch {
-      /* ignore bad URLs */
-    }
-  }
-
-  return out;
+function isClean(email: string): boolean {
+  if (email.length < 5 || email.length > 254) return false;
+  if (!email.includes("@")) return false;
+  if (FILE_EXT_RE.test(email)) return false;
+  if (NOISE_RE.test(email)) return false;
+  // Reject duplicate @ or leading/trailing dots/dashes
+  if ((email.match(/@/g) ?? []).length !== 1) return false;
+  const [, host] = email.split("@");
+  if (!host || !host.includes(".")) return false;
+  if (host.startsWith(".") || host.endsWith(".")) return false;
+  return true;
 }
 
-function collectEmails(
-  html: string,
-  sourceUrl: string,
-  found: Map<string, Set<string>>,
+function upsert(
+  map: Map<string, { confidence: Confidence; sources: Set<string> }>,
+  email: string,
+  confidence: Confidence,
+  source: string,
 ): void {
-  // Decode common HTML entities + mailto-encoded versions
-  const decoded = html
-    .replace(/&amp;/g, "&")
-    .replace(/&#64;/g, "@")
-    .replace(/\[at\]|\(at\)|\sat\s/gi, "@")
-    .replace(/\[dot\]|\(dot\)|\sdot\s/gi, ".");
-
-  const matches = decoded.match(EMAIL_RE) ?? [];
-  for (const raw of matches) {
-    const email = raw.trim().toLowerCase();
-    if (BLACKLIST_PATTERNS.some((p) => p.test(email))) continue;
-    if (!found.has(email)) found.set(email, new Set());
-    found.get(email)!.add(sourceUrl);
+  const existing = map.get(email);
+  if (!existing) {
+    map.set(email, { confidence, sources: new Set([source]) });
+    return;
   }
+  existing.sources.add(source);
+  // Upgrade only — never downgrade.
+  if (rank(confidence) > rank(existing.confidence)) {
+    existing.confidence = confidence;
+  }
+}
+
+function rank(c: Confidence): number {
+  return c === "high" ? 3 : c === "medium" ? 2 : 1;
+}
+
+function rankFindings(
+  domain: string,
+  map: Map<string, { confidence: Confidence; sources: Set<string> }>,
+): FoundEmail[] {
+  return [...map.entries()]
+    .map(([email, v]) => ({
+      email,
+      confidence: ROLE_NOREPLY_RE.test(email)
+        // Downgrade noreply/postmaster even if scraped — not useful for outreach
+        ? ("low" as Confidence)
+        : v.confidence,
+      sources: [...v.sources],
+    }))
+    .sort((a, b) => {
+      // 1. Confidence first
+      const dr = rank(b.confidence) - rank(a.confidence);
+      if (dr !== 0) return dr;
+      // 2. Same-domain emails before partners/vendors
+      const aOwn = a.email.endsWith(`@${domain}`) ? 1 : 0;
+      const bOwn = b.email.endsWith(`@${domain}`) ? 1 : 0;
+      if (aOwn !== bOwn) return bOwn - aOwn;
+      // 3. More sources = more trusted
+      const ds = b.sources.length - a.sources.length;
+      if (ds !== 0) return ds;
+      return a.email.localeCompare(b.email);
+    });
 }

@@ -17,9 +17,10 @@ export default async function EmailFinderPage() {
           Email Finder
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {`Enter any website URL — we'll scan the homepage plus common
-          contact, about, and team pages to extract every email address
-          we can find.`}
+          {`Enter a domain — we run three signals: site scrape (homepage +
+          /contact, /about, /team, /support, /imprint), DuckDuckGo phrase
+          search, and common-pattern fallback. Results are ranked by
+          confidence (high / medium / low).`}
         </p>
       </header>
 

@@ -5,5 +5,5 @@ import { findEmailsOnWebsite } from "@/lib/audit/email-finder";
 
 export async function findEmailsAction(url: string) {
   await requireUser();
-  return findEmailsOnWebsite(url, { maxPages: 8, timeoutMsPerPage: 8000 });
+  return findEmailsOnWebsite(url);
 }

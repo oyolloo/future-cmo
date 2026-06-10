@@ -139,17 +139,26 @@ export function createOyoPass(config: OyoPassConfig) {
     if (!storedState || storedState !== state) return fail("Security check failed", "invalid_state");
 
     // Token exchange
-    const tokenRes = await fetch(`${issuer}/api/oidc/token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: redirectUri,
-        client_id: clientId,
-        client_secret: clientSecret,
-      }),
-    });
+    const tokenUrl = `${issuer}/api/oidc/token`;
+    console.log("[OyoPass] Token exchange →", tokenUrl, { clientId, redirectUri, code: code.slice(0, 8) + "..." });
+
+    let tokenRes: Response;
+    try {
+      tokenRes = await fetch(tokenUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: redirectUri,
+          client_id: clientId,
+          client_secret: clientSecret,
+        }),
+      });
+    } catch (fetchErr) {
+      console.error("[OyoPass] Fetch failed:", fetchErr);
+      return fail("Cannot reach OyoPass server", "network_error");
+    }
 
     if (!tokenRes.ok) {
       const body = await tokenRes.text().catch(() => "");

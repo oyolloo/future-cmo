@@ -18,28 +18,10 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-# Dokploy exposes Environment-tab variables as build args when declared via ARG.
-# Every env var that the app reads at build time (import-time Zod validation,
-# Server Components, route handlers) must be present here.
-ARG DATABASE_URL
-ARG JWT_SECRET
-ARG SESSION_MAX_AGE=604800
-ARG GOOGLE_MAPS_API_KEY=""
-ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=""
-ARG OPENROUTER_API_KEY=""
-ARG SHOPIFY_ENCRYPTION_KEY=""
-ARG INNGEST_EVENT_KEY=""
-ARG INNGEST_SIGNING_KEY=""
-ENV DATABASE_URL=$DATABASE_URL \
-    JWT_SECRET=$JWT_SECRET \
-    SESSION_MAX_AGE=$SESSION_MAX_AGE \
-    GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY \
-    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY \
-    OPENROUTER_API_KEY=$OPENROUTER_API_KEY \
-    SHOPIFY_ENCRYPTION_KEY=$SHOPIFY_ENCRYPTION_KEY \
-    INNGEST_EVENT_KEY=$INNGEST_EVENT_KEY \
-    INNGEST_SIGNING_KEY=$INNGEST_SIGNING_KEY
-
+# Build without real env vars — the app uses lazy validation so
+# DATABASE_URL etc. aren't required until the first request.
+# Dokploy injects real env vars at container runtime.
+ENV NEXT_PHASE=phase-production-build
 RUN pnpm build
 
 ENV NODE_ENV=production

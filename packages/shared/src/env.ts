@@ -4,14 +4,26 @@ import { z } from "zod";
 // so the app fails fast (build/start) when something is missing or malformed.
 // Per blueprint §7: do not read process.env.X outside this module.
 
+/**
+ * When true, we're inside `next build` collecting page data — env vars
+ * like DATABASE_URL may not be available yet (Dokploy/Docker only injects
+ * them at runtime). We relax validation so the build succeeds, and the
+ * real validation happens at first request.
+ */
+const isBuildPhase =
+  process.env.NEXT_PHASE === "phase-production-build" ||
+  process.env.npm_lifecycle_event === "build";
+
 const EnvSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
-  DATABASE_URL: z.url().min(1, "DATABASE_URL is required"),
-  JWT_SECRET: z
-    .string()
-    .min(32, "JWT_SECRET must be at least 32 characters"),
+  DATABASE_URL: isBuildPhase
+    ? z.string().optional().default("postgresql://build:build@localhost:5432/build")
+    : z.url().min(1, "DATABASE_URL is required"),
+  JWT_SECRET: isBuildPhase
+    ? z.string().optional().default("build-placeholder-secret-32-chars-xx")
+    : z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   SESSION_MAX_AGE: z.coerce.number().int().positive().default(604_800),
 
   // Google Maps Platform — server-side key used by the GM Prospecting

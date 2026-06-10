@@ -22,14 +22,21 @@ export async function GET() {
   const state = randomBytes(16).toString("hex");
   const redirectUri = `${env.APP_URL}/api/auth/oyopass/callback`;
 
-  // Store state in cookie for CSRF verification
+  // Store state + popup flag in cookies for CSRF verification
   const jar = await cookies();
   jar.set("oyopass_state", state, {
     httpOnly: true,
     secure: env.APP_URL.startsWith("https://"),
     sameSite: "lax",
     path: "/",
-    maxAge: 300, // 5 minutes
+    maxAge: 300,
+  });
+  jar.set("oyopass_popup", "1", {
+    httpOnly: true,
+    secure: env.APP_URL.startsWith("https://"),
+    sameSite: "lax",
+    path: "/",
+    maxAge: 300,
   });
 
   const authUrl = new URL(`${issuer}/api/oidc/authorize`);

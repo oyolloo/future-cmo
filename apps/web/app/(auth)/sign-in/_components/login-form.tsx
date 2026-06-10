@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@kit/ui/button";
@@ -49,6 +49,58 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [ssoLoading, setSsoLoading] = useState(false);
+
+  // Listen for popup callback message
+  const handleMessage = useCallback(
+    (e: MessageEvent) => {
+      if (e.data?.type !== "oyopass_callback") return;
+      setSsoLoading(false);
+      if (e.data.ok) {
+        router.push("/dashboard");
+        router.refresh();
+      } else {
+        setError(e.data.error ?? "OyoPass sign-in failed");
+      }
+    },
+    [router],
+  );
+
+  useEffect(() => {
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [handleMessage]);
+
+  const openOyoPassPopup = () => {
+    setSsoLoading(true);
+    setError("");
+
+    const w = 500;
+    const h = 600;
+    const left = window.screenX + (window.innerWidth - w) / 2;
+    const top = window.screenY + (window.innerHeight - h) / 2;
+
+    const popup = window.open(
+      "/api/auth/oyopass",
+      "oyopass_sso",
+      `width=${w},height=${h},left=${left},top=${top},popup=yes,toolbar=no,menubar=no`,
+    );
+
+    // If popup was blocked
+    if (!popup) {
+      setSsoLoading(false);
+      setError("Popup was blocked. Please allow popups for this site.");
+      return;
+    }
+
+    // Poll for popup close (user closed manually without completing)
+    const timer = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(timer);
+        setSsoLoading(false);
+      }
+    }, 500);
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -142,14 +194,16 @@ export function LoginForm() {
         </span>
       </div>
 
-      {/* OyoPass SSO */}
-      <a
-        href="/api/auth/oyopass"
-        className="flex w-full items-center justify-center gap-2.5 rounded-md border border-border bg-background px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+      {/* OyoPass SSO — opens popup */}
+      <button
+        type="button"
+        onClick={openOyoPassPopup}
+        disabled={ssoLoading}
+        className="flex w-full items-center justify-center gap-2.5 rounded-md border border-border bg-background px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary disabled:opacity-50"
       >
         <OyoPassIcon />
-        Login with OyoPass
-      </a>
+        {ssoLoading ? "Connecting..." : "Login with OyoPass"}
+      </button>
 
       <p className="text-center text-sm text-muted-foreground">
         New here?{" "}

@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import {
   createSession,
   findUserByEmail,
+  findUserByUsername,
   type User,
 } from "@kit/database";
 import { env } from "@kit/shared/env";
@@ -20,16 +21,21 @@ export type LoginResult = {
 };
 
 export async function loginUser(input: LoginInput): Promise<LoginResult> {
-  const email = input.email.trim().toLowerCase();
+  const identifier = input.identifier.trim().toLowerCase();
 
-  const user = await findUserByEmail(email);
+  // Detect if the input looks like an email or a username.
+  const isEmail = identifier.includes("@");
+  const user = isEmail
+    ? await findUserByEmail(identifier)
+    : await findUserByUsername(identifier);
+
   if (!user) {
-    throw new AuthError("INVALID_CREDENTIALS", "Invalid email or password");
+    throw new AuthError("INVALID_CREDENTIALS", "Invalid email/username or password");
   }
 
   const matches = await bcrypt.compare(input.password, user.passwordHash);
   if (!matches) {
-    throw new AuthError("INVALID_CREDENTIALS", "Invalid email or password");
+    throw new AuthError("INVALID_CREDENTIALS", "Invalid email/username or password");
   }
 
   const expirySeconds = input.rememberMe

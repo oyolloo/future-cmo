@@ -20,7 +20,7 @@ import { useLogin } from "@/lib/auth/hooks";
 import { loginSchema, type LoginInput } from "../_lib/schema";
 
 const defaultValues: LoginInput = {
-  email: "",
+  identifier: "",
   password: "",
   rememberMe: false,
 };
@@ -43,15 +43,15 @@ export function LoginForm() {
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
         <FormField
           control={form.control}
-          name="email"
+          name="identifier"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Email or Username</FormLabel>
               <FormControl>
                 <Input
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
+                  type="text"
+                  autoComplete="username"
+                  placeholder="you@example.com or webdevarif"
                   {...field}
                 />
               </FormControl>

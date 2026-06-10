@@ -9,7 +9,10 @@ export const AUTH_COOKIE_NAME = "auth-token";
 function baseOptions() {
   return {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
+    // Only set secure flag when serving over HTTPS. Dokploy with HTTP
+    // (sslip.io without TLS) needs secure=false or the browser silently
+    // refuses to store the cookie.
+    secure: env.APP_URL.startsWith("https://"),
     sameSite: "lax" as const,
     path: "/",
   };

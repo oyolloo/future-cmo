@@ -69,6 +69,18 @@ const EnvSchema = z.object({
     .string()
     .optional()
     .transform((v) => (v && v.length > 0 ? v : undefined)),
+
+  // Resend — used for magic link auth emails. Get an API key at
+  // resend.com → API Keys. AUTH_EMAIL_FROM defaults to the Resend
+  // test sender so auth works without domain verification.
+  RESEND_API_KEY: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : undefined)),
+  AUTH_EMAIL_FROM: z
+    .string()
+    .optional()
+    .default("onboarding@resend.dev"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

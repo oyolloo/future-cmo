@@ -17,13 +17,7 @@ export default function SignInPage() {
       <CardContent className="space-y-6">
         <LoginForm />
         <p className="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link
-            href="/sign-up"
-            className="font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            Create one
-          </Link>
+          New here? Just enter your email — we&apos;ll create your account automatically.
         </p>
       </CardContent>
     </Card>

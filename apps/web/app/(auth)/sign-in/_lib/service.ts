@@ -33,6 +33,11 @@ export async function loginUser(input: LoginInput): Promise<LoginResult> {
     throw new AuthError("INVALID_CREDENTIALS", "Invalid email/username or password");
   }
 
+  // Magic-link-only users have no password hash — password login not possible.
+  if (!user.passwordHash) {
+    throw new AuthError("INVALID_CREDENTIALS", "This account uses magic link sign-in. Check your email.");
+  }
+
   const matches = await bcrypt.compare(input.password, user.passwordHash);
   if (!matches) {
     throw new AuthError("INVALID_CREDENTIALS", "Invalid email/username or password");

@@ -18,3 +18,4 @@ export * from "./saved-personas";
 export * from "./website-audits";
 export * from "./shopify-app-email-config";
 export * from "./automation-jobs";
+export * from "./magic-link-tokens";

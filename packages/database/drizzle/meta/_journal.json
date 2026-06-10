@@ -127,6 +127,13 @@
       "when": 1780728900000,
       "tag": "0017_automation_custom_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1780730000000,
+      "tag": "0018_magic_link_tokens",
+      "breakpoints": true
     }
   ]
 }

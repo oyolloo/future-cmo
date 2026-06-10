@@ -25,7 +25,7 @@ export async function sendMagicLink(
   await createMagicLinkToken({ email: email.toLowerCase(), token, expiresAt });
 
   const baseUrl = env.APP_URL.replace(/\/+$/, "");
-  const magicUrl = `${baseUrl}/verify?token=${token}`;
+  const magicUrl = `${baseUrl}/api/auth/verify?token=${token}`;
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",

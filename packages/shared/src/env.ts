@@ -88,6 +88,21 @@ const EnvSchema = z.object({
     .string()
     .optional()
     .default("onboarding@resend.dev"),
+
+  // OyoPass SSO — OIDC integration for "Login with OyoPass" button.
+  // Get credentials from OyoPass dashboard → Connected apps.
+  OYOPASS_ISSUER: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : undefined)),
+  OYOPASS_CLIENT_ID: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : undefined)),
+  OYOPASS_CLIENT_SECRET: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : undefined)),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

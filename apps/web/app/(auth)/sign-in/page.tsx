@@ -11,6 +11,11 @@ export const metadata = {
 const ERROR_MESSAGES: Record<string, string> = {
   missing_token: "Invalid link — no token found.",
   expired_token: "This link is expired or already used. Request a new one.",
+  access_denied: "You don't have access to this app. Ask your admin to grant you a role.",
+  token_exchange_failed: "OyoPass sign-in failed. Please try again.",
+  invalid_state: "Security check failed. Please try signing in again.",
+  sso_not_configured: "OyoPass SSO is not fully configured.",
+  missing_params: "Invalid callback — missing parameters.",
 };
 
 export default async function SignInPage({

@@ -57,7 +57,9 @@ export async function GET(req: NextRequest) {
   });
 
   if (!tokenRes.ok) {
-    console.error("OyoPass token exchange failed:", await tokenRes.text());
+    const body = await tokenRes.text().catch(() => "");
+    console.error("OyoPass token exchange failed:", tokenRes.status, body);
+    console.error("Request was:", { issuer, clientId, redirectUri: `${env.APP_URL}/api/auth/oyopass/callback`, code: code.slice(0, 10) + "..." });
     return fail("Token exchange failed", "token_exchange_failed");
   }
 

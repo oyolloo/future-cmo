@@ -5,7 +5,19 @@ import postgres from "postgres";
 
 import * as schema from "./schema";
 
-const connectionString = process.env.DATABASE_URL;
+/**
+ * During `next build` (page-data collection) DATABASE_URL may not exist —
+ * Dokploy/Docker injects env vars only at container runtime. Fall back to a
+ * placeholder so module evaluation succeeds; postgres-js connects lazily, so
+ * no real connection is attempted until the first query at runtime.
+ */
+const isBuildPhase =
+  process.env.NEXT_PHASE === "phase-production-build" ||
+  process.env.npm_lifecycle_event === "build";
+
+const connectionString =
+  process.env.DATABASE_URL ||
+  (isBuildPhase ? "postgresql://build:build@localhost:5432/build" : undefined);
 if (!connectionString) {
   throw new Error("DATABASE_URL is not set");
 }

@@ -18,11 +18,15 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-# Build without real env vars — the app uses lazy validation so
-# DATABASE_URL etc. aren't required until the first request.
-# Dokploy injects real env vars at container runtime.
-ENV NEXT_PHASE=phase-production-build
-RUN pnpm build
+# NEXT_PUBLIC_* values are baked into the client bundle at build time.
+# Dokploy passes "Build-time Arguments" as --build-arg.
+ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=""
+ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+
+# Build without real server env vars — env.ts and the db client relax
+# validation during the build phase (NEXT_PHASE scoped to this command only).
+# Dokploy injects the real env vars at container runtime.
+RUN NEXT_PHASE=phase-production-build pnpm build
 
 ENV NODE_ENV=production
 ENV PORT=3000

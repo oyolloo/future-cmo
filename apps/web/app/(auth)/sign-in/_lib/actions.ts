@@ -15,7 +15,7 @@ export async function loginAction(
   formData: FormData,
 ): Promise<LoginActionState> {
   const parsed = loginSchema.safeParse({
-    email: formData.get("email"),
+    identifier: formData.get("identifier"),
     password: formData.get("password"),
     rememberMe: formData.get("rememberMe") === "on",
   });

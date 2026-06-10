@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@kit/ui/card";
 
 import { LoginForm } from "./_components/login-form";
@@ -37,9 +35,6 @@ export default async function SignInPage({
           </p>
         ) : null}
         <LoginForm />
-        <p className="text-center text-sm text-muted-foreground">
-          New here? Just enter your email — we&apos;ll create your account automatically.
-        </p>
       </CardContent>
     </Card>
   );

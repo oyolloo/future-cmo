@@ -43,8 +43,14 @@ export async function sendMagicLink(
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    console.error("[magic-link] Resend error:", body);
-    return { ok: false, error: "Failed to send email. Try again." };
+    console.error("[magic-link] Resend error:", res.status, body);
+    // Surface the actual Resend error for debugging
+    let detail = "Failed to send email.";
+    try {
+      const parsed = JSON.parse(body) as { message?: string; statusCode?: number };
+      if (parsed.message) detail = parsed.message;
+    } catch { /* use default */ }
+    return { ok: false, error: detail };
   }
 
   return { ok: true };

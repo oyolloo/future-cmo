@@ -70,6 +70,13 @@ const EnvSchema = z.object({
     .optional()
     .transform((v) => (v && v.length > 0 ? v : undefined)),
 
+  // Public-facing app URL. Used for magic link emails so the link points
+  // to the real domain, not localhost. In dev, defaults to localhost:3000.
+  APP_URL: z
+    .string()
+    .optional()
+    .default("http://localhost:3000"),
+
   // Resend — used for magic link auth emails. Get an API key at
   // resend.com → API Keys. AUTH_EMAIL_FROM defaults to the Resend
   // test sender so auth works without domain verification.

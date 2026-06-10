@@ -12,7 +12,6 @@ const MAGIC_LINK_EXPIRY_MINUTES = 15;
  */
 export async function sendMagicLink(
   email: string,
-  baseUrl: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!env.RESEND_API_KEY) {
     return { ok: false, error: "RESEND_API_KEY not configured." };
@@ -25,6 +24,7 @@ export async function sendMagicLink(
 
   await createMagicLinkToken({ email: email.toLowerCase(), token, expiresAt });
 
+  const baseUrl = env.APP_URL.replace(/\/+$/, "");
   const magicUrl = `${baseUrl}/auth/verify?token=${token}`;
 
   const res = await fetch("https://api.resend.com/emails", {

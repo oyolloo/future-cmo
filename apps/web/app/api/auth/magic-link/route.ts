@@ -26,11 +26,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // Derive the base URL from the request (works on any domain/port).
-  const url = new URL(request.url);
-  const baseUrl = `${url.protocol}//${url.host}`;
-
-  const result = await sendMagicLink(parsed.data.email, baseUrl);
+  const result = await sendMagicLink(parsed.data.email);
 
   if (!result.ok) {
     return NextResponse.json(

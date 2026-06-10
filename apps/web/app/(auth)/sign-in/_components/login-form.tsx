@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@kit/ui/button";
@@ -9,23 +9,8 @@ import { Label } from "@kit/ui/label";
 import { Checkbox } from "@kit/ui/checkbox";
 import { Separator } from "@kit/ui/separator";
 
+import { OyoPassButton } from "@/lib/oyopass/button";
 import { loginAction } from "../_lib/actions";
-
-function OyoPassIcon() {
-  return (
-    <svg width={18} height={18} viewBox="0 0 32 32" fill="none">
-      <rect width="32" height="32" rx="7" fill="url(#op-g)" />
-      <circle cx="16" cy="16" r="6" stroke="white" strokeWidth="2.2" />
-      <circle cx="21" cy="11" r="2.2" fill="white" />
-      <defs>
-        <linearGradient id="op-g" x1="0" y1="0" x2="32" y2="32">
-          <stop stopColor="#3d9bff" />
-          <stop offset="1" stopColor="#007aff" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
 
 function EyeIcon({ className }: { className?: string }) {
   return (
@@ -49,58 +34,6 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
-  const [ssoLoading, setSsoLoading] = useState(false);
-
-  // Listen for popup callback message
-  const handleMessage = useCallback(
-    (e: MessageEvent) => {
-      if (e.data?.type !== "oyopass_callback") return;
-      setSsoLoading(false);
-      if (e.data.ok) {
-        router.push("/dashboard");
-        router.refresh();
-      } else {
-        setError(e.data.error ?? "OyoPass sign-in failed");
-      }
-    },
-    [router],
-  );
-
-  useEffect(() => {
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, [handleMessage]);
-
-  const openOyoPassPopup = () => {
-    setSsoLoading(true);
-    setError("");
-
-    const w = 500;
-    const h = 600;
-    const left = window.screenX + (window.innerWidth - w) / 2;
-    const top = window.screenY + (window.innerHeight - h) / 2;
-
-    const popup = window.open(
-      "/api/auth/oyopass",
-      "oyopass_sso",
-      `width=${w},height=${h},left=${left},top=${top},popup=yes,toolbar=no,menubar=no`,
-    );
-
-    // If popup was blocked
-    if (!popup) {
-      setSsoLoading(false);
-      setError("Popup was blocked. Please allow popups for this site.");
-      return;
-    }
-
-    // Poll for popup close (user closed manually without completing)
-    const timer = setInterval(() => {
-      if (popup.closed) {
-        clearInterval(timer);
-        setSsoLoading(false);
-      }
-    }, 500);
-  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -121,43 +54,18 @@ export function LoginForm() {
 
   return (
     <div className="space-y-5">
-      {/* Email/Username + Password form */}
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <div className="space-y-2">
           <Label htmlFor="identifier">Email or username</Label>
-          <Input
-            id="identifier"
-            name="identifier"
-            type="text"
-            autoComplete="username"
-            placeholder="you@example.com"
-            required
-          />
+          <Input id="identifier" name="identifier" type="text" autoComplete="username" placeholder="you@example.com" required />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>
           <div className="relative">
-            <Input
-              id="password"
-              name="password"
-              type={showPassword ? "text" : "password"}
-              autoComplete="current-password"
-              placeholder="Your password"
-              className="pr-10"
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground transition-colors"
-              tabIndex={-1}
-            >
-              {showPassword ? (
-                <EyeOffIcon className="size-4" />
-              ) : (
-                <EyeIcon className="size-4" />
-              )}
+            <Input id="password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" placeholder="Your password" className="pr-10" required />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
+              {showPassword ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
             </button>
           </div>
         </div>
@@ -167,49 +75,29 @@ export function LoginForm() {
             <Checkbox name="rememberMe" />
             <span className="text-muted-foreground">Remember me</span>
           </label>
-          <a
-            href="/forgot-password"
-            className="text-sm text-primary hover:underline transition-colors"
-          >
-            Forgot password?
-          </a>
+          <a href="/forgot-password" className="text-sm text-primary hover:underline transition-colors">Forgot password?</a>
         </div>
 
-        {error && (
-          <p className="text-sm text-destructive" role="alert">
-            {error}
-          </p>
-        )}
+        {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
 
         <Button type="submit" className="w-full" disabled={pending}>
           {pending ? "Signing in..." : "Sign in"}
         </Button>
       </form>
 
-      {/* Divider */}
       <div className="relative flex items-center justify-center">
         <Separator className="flex-1" />
-        <span className="px-3 text-xs text-muted-foreground bg-card absolute">
-          or
-        </span>
+        <span className="px-3 text-xs text-muted-foreground bg-card absolute">or</span>
       </div>
 
-      {/* OyoPass SSO — opens popup */}
-      <button
-        type="button"
-        onClick={openOyoPassPopup}
-        disabled={ssoLoading}
+      <OyoPassButton
         className="flex w-full items-center justify-center gap-2.5 rounded-md border border-border bg-background px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary disabled:opacity-50"
-      >
-        <OyoPassIcon />
-        {ssoLoading ? "Connecting..." : "Login with OyoPass"}
-      </button>
+        onError={(err) => setError(err)}
+      />
 
       <p className="text-center text-sm text-muted-foreground">
         New here?{" "}
-        <a href="/sign-up" className="text-primary hover:underline transition-colors">
-          Create an account
-        </a>
+        <a href="/sign-up" className="text-primary hover:underline transition-colors">Create an account</a>
       </p>
     </div>
   );

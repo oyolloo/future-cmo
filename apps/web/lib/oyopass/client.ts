@@ -126,6 +126,26 @@ export function createOyoPass(config: OyoPassConfig) {
     return NextResponse.redirect(authUrl.toString());
   }
 
+  // ─── Human-readable error messages ────────────────────────────────
+
+  const errorMessages: Record<string, string> = {
+    access_denied: "You don't have access to this application. Please contact your administrator.",
+    invalid_state: "Security check failed. Please try again.",
+    missing_params: "Something went wrong. Please try again.",
+    token_exchange_failed: "Could not complete sign-in. Please try again.",
+    network_error: "Cannot reach OyoPass server. Please try later.",
+    userinfo_failed: "Could not retrieve your profile. Please try again.",
+    callback_error: "Login processing failed. Please try again.",
+    server_error: "An unexpected error occurred. Please try again.",
+    login_required: "Please sign in to your OyoPass account first.",
+    consent_required: "You need to grant permission to continue.",
+    interaction_required: "Additional verification is required. Please try again.",
+  };
+
+  function humanError(code: string): string {
+    return errorMessages[code] ?? code;
+  }
+
   // ─── GET — handle OIDC callback ──────────────────────────────────
 
   async function callbackHandler(req: NextRequest) {
@@ -145,7 +165,7 @@ export function createOyoPass(config: OyoPassConfig) {
       return NextResponse.redirect(new URL(onError(msg, errCode), appUrl));
     };
 
-    if (errorParam) return fail(errorParam, errorParam);
+    if (errorParam) return fail(humanError(errorParam), errorParam);
     if (!code || !state) return fail("Missing parameters", "missing_params");
 
     // CSRF check

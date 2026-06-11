@@ -1,7 +1,25 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+
+// ─── Inline spinner (no icon library dependency) ─────────────────────
+
+function Spinner({ className }: { className?: string }) {
+  return (
+    <svg
+      className={`animate-spin ${className ?? "size-4"}`}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
+  );
+}
 
 // ─── OyoPass Logo ────────────────────────────────────────────────────
 
@@ -21,16 +39,18 @@ function OyoPassLogo({ size = 18 }: { size?: number }) {
   );
 }
 
+export { OyoPassLogo };
+
 // ─── Types ───────────────────────────────────────────────────────────
 
-interface OyoPassButtonProps {
+export interface OyoPassButtonProps {
   /** Path to the initiate route (default: /api/auth/oyopass) */
   initiatePath?: string;
   /** Where to redirect after successful login (default: /dashboard) */
   redirectTo?: string;
-  /** Button text (default: Login with OyoPass) */
+  /** Button label (default: Sign in with OyoPass) */
   label?: string;
-  /** Loading text (default: Connecting...) */
+  /** Loading label (default: Connecting...) */
   loadingLabel?: string;
   /** Popup width (default: 500) */
   popupWidth?: number;
@@ -40,6 +60,17 @@ interface OyoPassButtonProps {
   className?: string;
   /** Called on error */
   onError?: (error: string) => void;
+  /**
+   * Custom render — lets the consuming app control the button look.
+   * Receives { loading, onClick, label, logo } and returns JSX.
+   * If omitted, renders a default styled <button>.
+   */
+  render?: (props: {
+    loading: boolean;
+    onClick: () => void;
+    label: string;
+    logo: ReactNode;
+  }) => ReactNode;
 }
 
 // ─── Component ───────────────────────────────────────────────────────
@@ -47,12 +78,13 @@ interface OyoPassButtonProps {
 export function OyoPassButton({
   initiatePath = "/api/auth/oyopass",
   redirectTo = "/dashboard",
-  label = "Login with OyoPass",
+  label = "Sign in with OyoPass",
   loadingLabel = "Connecting...",
   popupWidth = 500,
   popupHeight = 600,
   className,
   onError,
+  render,
 }: OyoPassButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -102,6 +134,15 @@ export function OyoPassButton({
     }, 500);
   };
 
+  const logo = loading ? <Spinner /> : <OyoPassLogo />;
+  const currentLabel = loading ? loadingLabel : label;
+
+  // Custom render
+  if (render) {
+    return <>{render({ loading, onClick: openPopup, label: currentLabel, logo })}</>;
+  }
+
+  // Default render
   return (
     <button
       type="button"
@@ -109,11 +150,11 @@ export function OyoPassButton({
       disabled={loading}
       className={
         className ??
-        "flex w-full items-center justify-center gap-2.5 rounded-md border border-[#333] bg-transparent px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/[0.04] disabled:opacity-50"
+        "inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-input bg-background text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
       }
     >
-      <OyoPassLogo />
-      {loading ? loadingLabel : label}
+      {logo}
+      {currentLabel}
     </button>
   );
 }

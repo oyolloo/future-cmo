@@ -28,7 +28,7 @@ export interface OyoPassConfig {
   clientId: string;
   /** OIDC client secret from OyoPass dashboard */
   clientSecret: string;
-  /** Your app's public URL (e.g. https://futurecmo.oyolloo.com) */
+  /** Your app's public URL (e.g. https://myapp.oyolloo.com) */
   appUrl: string;
   /** Callback path (default: /api/auth/oyopass/callback) */
   callbackPath?: string;
@@ -41,8 +41,8 @@ export interface OyoPassConfig {
    */
   onSuccess: (profile: OyoPassProfile, tokens: OyoPassTokens) => Promise<string>;
   /**
-   * Called on error. Return the redirect URL (e.g. "/sign-in?error=...").
-   * If not provided, defaults to redirecting to "/sign-in?error=<code>".
+   * Called on error. Return the redirect URL (e.g. "/login?error=...").
+   * If not provided, defaults to redirecting to "/login?error=<code>".
    */
   onError?: (error: string, code: string) => string;
 }
@@ -55,6 +55,21 @@ const COOKIE_MAX_AGE = 300; // 5 minutes
 
 // ─── Factory ─────────────────────────────────────────────────────────
 
+/**
+ * Creates OyoPass OIDC handlers for your Next.js app.
+ *
+ * Usage:
+ * ```ts
+ * // lib/oyopass.ts
+ * export const oyopass = createOyoPass({ issuer, clientId, ... });
+ *
+ * // app/api/auth/oyopass/route.ts
+ * export const GET = () => oyopass.initiateHandler();
+ *
+ * // app/api/auth/oyopass/callback/route.ts
+ * export const GET = (req) => oyopass.callbackHandler(req);
+ * ```
+ */
 export function createOyoPass(config: OyoPassConfig) {
   const {
     issuer,
@@ -64,7 +79,7 @@ export function createOyoPass(config: OyoPassConfig) {
     callbackPath = "/api/auth/oyopass/callback",
     scopes = "openid profile email",
     onSuccess,
-    onError = (_, code) => `/sign-in?error=${code}`,
+    onError = (_, code) => `/login?error=${code}`,
   } = config;
 
   const redirectUri = `${appUrl}${callbackPath}`;
@@ -89,7 +104,7 @@ export function createOyoPass(config: OyoPassConfig) {
     </script><p>${ok ? "Signed in! This window will close." : error ?? "Error"}</p></body></html>`;
   }
 
-  // ─── GET /api/auth/oyopass — initiate OIDC flow ──────────────────
+  // ─── GET — initiate OIDC flow ────────────────────────────────────
 
   async function initiateHandler() {
     if (!issuer || !clientId) {
@@ -111,7 +126,7 @@ export function createOyoPass(config: OyoPassConfig) {
     return NextResponse.redirect(authUrl.toString());
   }
 
-  // ─── GET /api/auth/oyopass/callback — handle OIDC callback ───────
+  // ─── GET — handle OIDC callback ──────────────────────────────────
 
   async function callbackHandler(req: NextRequest) {
     const q = req.nextUrl.searchParams;
@@ -123,11 +138,11 @@ export function createOyoPass(config: OyoPassConfig) {
     const isPopup = jar.get(POPUP_COOKIE)?.value === "1";
     jar.delete(POPUP_COOKIE);
 
-    const fail = (msg: string, code: string) => {
+    const fail = (msg: string, errCode: string) => {
       if (isPopup) {
         return new NextResponse(popupHtml(false, msg), { headers: { "Content-Type": "text/html" } });
       }
-      return NextResponse.redirect(new URL(onError(msg, code), appUrl));
+      return NextResponse.redirect(new URL(onError(msg, errCode), appUrl));
     };
 
     if (errorParam) return fail(errorParam, errorParam);
@@ -139,12 +154,9 @@ export function createOyoPass(config: OyoPassConfig) {
     if (!storedState || storedState !== state) return fail("Security check failed", "invalid_state");
 
     // Token exchange
-    const tokenUrl = `${issuer}/api/oidc/token`;
-    console.log("[OyoPass] Token exchange →", tokenUrl, { clientId, redirectUri, code: code.slice(0, 8) + "..." });
-
     let tokenRes: Response;
     try {
-      tokenRes = await fetch(tokenUrl, {
+      tokenRes = await fetch(`${issuer}/api/oidc/token`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
@@ -186,7 +198,7 @@ export function createOyoPass(config: OyoPassConfig) {
       return fail("Login processing failed", "callback_error");
     }
 
-    // Popup mode
+    // Popup mode — send postMessage to parent, then close
     if (isPopup) {
       return new NextResponse(popupHtml(true), { headers: { "Content-Type": "text/html" } });
     }

@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Required by the Dockerfile, which copies apps/web/.next/standalone.
+  output: "standalone",
   transpilePackages: ["@kit/database", "@kit/shared", "@kit/ui"],
   // Native Rust binaries inside `impit` (browser-fingerprinted HTTP client
   // used by `google-maps-review-scraper`) can't be bundled by Turbopack.

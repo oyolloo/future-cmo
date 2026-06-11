@@ -1,13 +1,13 @@
 # syntax=docker/dockerfile:1
-FROM node:22-slim
 
-ENV PNPM_HOME=/pnpm
-ENV PATH=$PNPM_HOME:$PATH
+# ── Base ────────────────────────────────────────────────────────────────────
+FROM node:22-slim AS base
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
-
 WORKDIR /app
 
-# Install dependencies first (better layer caching)
+# ── Dependencies (Next.js monorepo) ────────────────────────────────────────
+FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json tsconfig.json components.json ./
 COPY apps/web/package.json apps/web/package.json
 COPY packages/database/package.json packages/database/package.json
@@ -16,6 +16,15 @@ COPY packages/ui/package.json packages/ui/package.json
 COPY tooling/tsconfig/package.json tooling/tsconfig/package.json
 RUN pnpm install --frozen-lockfile
 
+# ── Automation server dependencies (standalone npm — no pnpm conflicts) ────
+FROM base AS auto-deps
+WORKDIR /app/automation-server
+COPY apps/automation-server/package.json ./
+RUN npm install --production
+
+# ── Builder ─────────────────────────────────────────────────────────────────
+FROM base AS builder
+COPY --from=deps /app/ ./
 COPY . .
 
 # NEXT_PUBLIC_* values are baked into the client bundle at build time.
@@ -28,9 +37,39 @@ ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 # Dokploy injects the real env vars at container runtime.
 RUN NEXT_PHASE=phase-production-build pnpm build
 
+# ── Runner ──────────────────────────────────────────────────────────────────
+FROM base AS runner
+WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+# Automation server runs on port 3001 inside the same container.
+ENV AUTOMATION_PORT=3001
+ENV AUTOMATION_SECRET=internal-auto-secret
+
+RUN groupadd --system --gid 1001 nodejs \
+  && useradd --system --uid 1001 --gid nodejs nextjs
+
+# Persistent data dir for WhatsApp (Baileys) sessions, mounted as a named volume
+# in production. Created + owned by nextjs here so a fresh empty volume inherits
+# this ownership and stays writable by the non-root runtime user (uid 1001).
+RUN mkdir -p /data && chown nextjs:nodejs /data
+
+# Next.js standalone output.
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
+
+# Automation server (Express + Baileys + channels + schedulers).
+COPY --from=auto-deps --chown=nextjs:nodejs /app/automation-server/ ./automation-server/
+COPY --from=builder --chown=nextjs:nodejs /app/apps/automation-server/*.js ./automation-server/
+COPY --from=builder --chown=nextjs:nodejs /app/apps/automation-server/channels/ ./automation-server/channels/
+COPY --from=builder --chown=nextjs:nodejs /app/apps/automation-server/scheduler/ ./automation-server/scheduler/
+COPY --from=builder --chown=nextjs:nodejs /app/apps/automation-server/start.sh ./automation-server/
+RUN chmod +x ./automation-server/start.sh
+
+USER nextjs
 EXPOSE 3000
 
-CMD ["pnpm", "--filter", "@future-cmo/web", "start"]
+# Start both: automation server in background + Next.js in foreground.
+CMD ["sh", "/app/automation-server/start.sh"]

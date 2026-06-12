@@ -134,6 +134,13 @@
       "when": 1780730000000,
       "tag": "0018_magic_link_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1781308800000,
+      "tag": "0019_api_keys",
+      "breakpoints": true
     }
   ]
 }

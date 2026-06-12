@@ -20,3 +20,4 @@ export * from "./shopify-app-email-config";
 export * from "./automation-jobs";
 export * from "./magic-link-tokens";
 export * from "./automation";
+export * from "./api-keys";

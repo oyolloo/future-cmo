@@ -308,6 +308,7 @@ const categories: NavCategory[] = [
 
 const workspaceNav: NavLeaf[] = [
   { href: "/search", label: "Search", icon: Search, shortcut: "⌘K", soon: true },
+  { href: "/settings/api-keys", label: "API Keys", icon: Code2 },
   { href: "/settings", label: "Settings", icon: Settings, soon: true },
 ];
 

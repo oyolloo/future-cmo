@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { withApiKey } from "@/lib/api/middleware";
+import { withApiKey, handleCorsPreFlight } from "@/lib/api/middleware";
+
+export function OPTIONS() { return handleCorsPreFlight(); }
 import { lookupRdap } from "@/lib/audit/rdap";
 import { lookupDns, lookupEmailSecurity } from "@/lib/audit/dns-lookup";
 import { lookupIpGeo } from "@/lib/audit/ip-geo";

@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { withApiKey } from "@/lib/api/middleware";
+import { withApiKey, handleCorsPreFlight } from "@/lib/api/middleware";
+
+export function OPTIONS() { return handleCorsPreFlight(); }
 import { findEmailsOnWebsite } from "@/lib/audit/email-finder";
 
 export async function POST(req: NextRequest) {

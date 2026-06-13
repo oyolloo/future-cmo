@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { withApiKey } from "@/lib/api/middleware";
+import { withApiKey, handleCorsPreFlight } from "@/lib/api/middleware";
+
+export function OPTIONS() { return handleCorsPreFlight(); }
 import { fetchHtml } from "@/lib/audit/website";
 import { analyzeAISeo } from "@/lib/audit/ai-seo";
 import { fetchRobotsReport, probeLlmsTxt, type RobotsReport } from "@/lib/audit/robots-parser";

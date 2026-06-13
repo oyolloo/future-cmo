@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { withApiKey } from "@/lib/api/middleware";
+import { withApiKey, handleCorsPreFlight } from "@/lib/api/middleware";
+
+export function OPTIONS() { return handleCorsPreFlight(); }
 import { chatJson, FREE_MODELS, CHEAP_MODELS } from "@/lib/ai/openrouter";
 
 const CompetitorSchema = z.object({

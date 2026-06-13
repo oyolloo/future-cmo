@@ -9,7 +9,9 @@
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^7.0.0-rc13",
+    "deep-email-validator": "^0.1.27",
     "express": "^5.1.0",
+    "mailchecker": "^6.0.20",
     "nodemailer": "^8.0.3",
     "pg": "^8.16.2",
     "qrcode": "^1.5.4"

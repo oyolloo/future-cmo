@@ -2,7 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { withApiKey, handleCorsPreFlight } from "@/lib/api/middleware";
 
 export function OPTIONS() { return handleCorsPreFlight(); }
-import { promises as dns } from "node:dns";
+
+const AUTO_URL = process.env.AUTOMATION_URL || "http://localhost:3001";
+const AUTO_SECRET = process.env.AUTOMATION_SECRET || "dev-secret";
 
 export async function POST(req: NextRequest) {
   return withApiKey(req, "email-validator", async () => {
@@ -15,24 +17,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const emails = raw
-      .split(",")
-      .map((e: string) => e.trim())
-      .filter(Boolean);
+    try {
+      const resp = await fetch(`${AUTO_URL}/email/validate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auto-secret": AUTO_SECRET,
+        },
+        body: JSON.stringify({ emails: raw }),
+        signal: AbortSignal.timeout(60_000),
+      });
 
-    const results = await Promise.all(
-      emails.map(async (email: string) => {
-        const domain = email.split("@")[1];
-        if (!domain) return { email, valid: false };
-        try {
-          const mx = await dns.resolveMx(domain);
-          return { email, valid: mx.length > 0 };
-        } catch {
-          return { email, valid: false };
-        }
-      }),
-    );
+      const data = await resp.json();
+      if (!resp.ok) {
+        return NextResponse.json(
+          { ok: false, error: { code: "VALIDATION_ERROR", message: data.error || "Validation failed" } },
+          { status: resp.status },
+        );
+      }
 
-    return NextResponse.json({ ok: true, data: { results } });
+      return NextResponse.json(data);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Validation service unavailable";
+      return NextResponse.json(
+        { ok: false, error: { code: "SERVICE_UNAVAILABLE", message: msg } },
+        { status: 503 },
+      );
+    }
   });
 }

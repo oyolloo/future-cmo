@@ -16,6 +16,7 @@
 import express from 'express';
 import * as wa from './channels/whatsapp.js';
 import { sendEmail, getEmailStatus } from './channels/email.js';
+import { validateEmails } from './channels/email-validator.js';
 import { sendSms } from './channels/sms.js';
 import { startJobRunner } from './scheduler/job-runner.js';
 import { startCheckoutFollowup } from './scheduler/checkout-followup.js';
@@ -82,6 +83,25 @@ app.get('/email/status/:wsId', auth, async (req, res) => {
   res.json(r);
 });
 
+// ── Email validation routes ─────────────────────────────────────────────────
+
+app.post('/email/validate', auth, async (req, res) => {
+  const raw = req.body?.emails;
+  if (!raw || typeof raw !== 'string') {
+    return res.status(400).json({ ok: false, error: "Missing 'emails' field (comma-separated)" });
+  }
+  const emails = raw.split(',').map((e) => e.trim()).filter(Boolean);
+  if (!emails.length) {
+    return res.status(400).json({ ok: false, error: 'No valid emails provided' });
+  }
+  try {
+    const results = await validateEmails(emails);
+    res.json({ ok: true, data: { results } });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message || 'Validation failed' });
+  }
+});
+
 // ── SMS routes ───────────────────────────────────────────────────────────────
 
 app.post('/sms/send', auth, async (req, res) => {
@@ -93,7 +113,7 @@ app.post('/sms/send', auth, async (req, res) => {
 // ── Health ───────────────────────────────────────────────────────────────────
 
 app.get('/health', (req, res) => {
-  res.json({ ok: true, uptime: process.uptime(), channels: ['whatsapp', 'email', 'sms'] });
+  res.json({ ok: true, uptime: process.uptime(), channels: ['whatsapp', 'email', 'email-validator', 'sms'] });
 });
 
 // ── Start server + all schedulers ────────────────────────────────────────────

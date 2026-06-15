@@ -17,10 +17,9 @@ export default async function SocialLinksPage() {
           Social Links Finder
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Enter a website URL — we crawl the homepage, /contact, and /about
-          pages to extract social media profile links. Supports Facebook,
-          Instagram, Twitter/X, LinkedIn, YouTube, TikTok, Pinterest, GitHub,
-          Threads, Snapchat, and Discord.
+          Enter a website URL to find social media profiles. Quick scan crawls
+          the site directly. Deep search also queries Google for each platform
+          to find profiles the site doesn&apos;t link to.
         </p>
       </header>
 

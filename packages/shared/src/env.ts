@@ -89,6 +89,30 @@ const EnvSchema = z.object({
     .optional()
     .default("onboarding@resend.dev"),
 
+  // FreeLLMAPI — Oyolloo's unified LLM router. Drop-in OpenAI-compatible
+  // gateway. Use for fast "prompt in, text out" tasks (no agent overhead).
+  // https://freellmapi.oyolloo.com
+  FREELLMAPI_BASE_URL: z
+    .string()
+    .optional()
+    .default("https://freellmapi.oyolloo.com/v1"),
+  FREELLMAPI_API_KEY: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : undefined)),
+
+  // Hermes Agent — Oyolloo's agentic LLM endpoint. Has tool use, memory,
+  // and multi-turn conversation support. NEVER expose the key to browsers.
+  // https://hermes.oyolloo.com
+  HERMES_BASE_URL: z
+    .string()
+    .optional()
+    .default("https://hermes.oyolloo.com/v1"),
+  HERMES_API_KEY: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : undefined)),
+
   // OyoPass SSO — OIDC integration for "Login with OyoPass" button.
   // Get credentials from OyoPass dashboard → Connected apps.
   OYOPASS_ISSUER: z

@@ -25,8 +25,15 @@ const PLATFORM_COLORS: Record<string, string> = {
   discord: "border-[#5865F2]/30 bg-[#5865F2]/10 text-[#5865F2]",
 };
 
+const SOURCE_LABELS: Record<string, string> = {
+  scrape: "website",
+  google: "google",
+  schema: "schema.org",
+};
+
 export function SocialLinksTool() {
   const [url, setUrl] = useState("");
+  const [deep, setDeep] = useState(false);
   const [result, setResult] = useState<SocialLinksData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -37,7 +44,7 @@ export function SocialLinksTool() {
     setError(null);
     setResult(null);
     startTransition(async () => {
-      const res = await findSocialLinksAction(url.trim());
+      const res = await findSocialLinksAction(url.trim(), { deep });
       if (res.ok) {
         setResult(res.data);
       } else {
@@ -77,16 +84,47 @@ export function SocialLinksTool() {
             {isPending ? "Scanning..." : "Find links"}
           </Button>
         </div>
-        <p className="text-comment mt-2">
-          {"// scans homepage + /contact + /about for social profile links"}
-        </p>
+
+        <div className="mt-3 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setDeep(false)}
+            className={cn(
+              "rounded-md border px-3 py-1.5 font-mono text-[0.6875rem] uppercase tracking-wider transition-colors",
+              !deep
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border bg-transparent text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Quick scan
+          </button>
+          <button
+            type="button"
+            onClick={() => setDeep(true)}
+            className={cn(
+              "rounded-md border px-3 py-1.5 font-mono text-[0.6875rem] uppercase tracking-wider transition-colors",
+              deep
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border bg-transparent text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Deep search
+          </button>
+          <span className="text-[0.625rem] text-muted-foreground">
+            {deep
+              ? "// scrapes site + searches Google for each platform"
+              : "// scrapes homepage + /contact + /about pages"}
+          </span>
+        </div>
       </div>
 
       {isPending ? (
         <div className="rounded-lg border border-border bg-card p-8 text-center">
           <div className="mx-auto size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           <p className="mt-3 text-sm text-muted-foreground">
-            Crawling website pages for social media links...
+            {deep
+              ? "Deep searching — scraping pages + querying Google..."
+              : "Crawling website pages for social media links..."}
           </p>
         </div>
       ) : null}
@@ -156,11 +194,16 @@ export function SocialLinksTool() {
                       >
                         {link.url.replace(/^https?:\/\//, "")}
                       </a>
-                      {link.handle ? (
-                        <span className="font-mono text-[0.625rem] text-muted-foreground">
-                          @{link.handle}
+                      <div className="flex items-center gap-2">
+                        {link.handle ? (
+                          <span className="font-mono text-[0.625rem] text-muted-foreground">
+                            @{link.handle}
+                          </span>
+                        ) : null}
+                        <span className="font-mono text-[0.5rem] uppercase tracking-wider text-muted-foreground/50">
+                          via {SOURCE_LABELS[link.source] ?? link.source}
                         </span>
-                      ) : null}
+                      </div>
                     </div>
                     <button
                       type="button"
@@ -176,32 +219,46 @@ export function SocialLinksTool() {
           ) : (
             <div className="rounded-lg border border-dashed border-border bg-background p-8 text-center">
               <p className="text-sm text-muted-foreground">
-                No social media links found on the scanned pages.
+                No social media links found.
               </p>
               <p className="text-comment mt-2">
-                {"// site may not link to social profiles or may block scraping"}
+                {deep
+                  ? "// tried website scraping + Google search — no profiles found"
+                  : "// try deep search for better results"}
               </p>
             </div>
           )}
 
           <details className="rounded-lg border border-border bg-card p-5">
             <summary className="cursor-pointer text-label">
-              Pages scanned · {result.pagesScanned.length}
+              Scan details
             </summary>
-            <ul className="mt-3 space-y-1">
-              {result.pagesScanned.map((p) => (
-                <li key={p}>
-                  <a
-                    href={p}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-mono text-[0.6875rem] text-muted-foreground hover:text-primary hover:underline"
-                  >
-                    {p}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <div className="mt-3 space-y-3">
+              <div>
+                <p className="font-mono text-[0.625rem] uppercase tracking-wider text-muted-foreground">
+                  Pages crawled · {result.pagesScanned.length}
+                </p>
+                <ul className="mt-1 space-y-0.5">
+                  {result.pagesScanned.map((p) => (
+                    <li key={p}>
+                      <a
+                        href={p}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-[0.6875rem] text-muted-foreground hover:text-primary hover:underline"
+                      >
+                        {p}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {result.googleSearched ? (
+                <p className="font-mono text-[0.625rem] uppercase tracking-wider text-muted-foreground">
+                  Google search · 8 platforms queried
+                </p>
+              ) : null}
+            </div>
           </details>
         </>
       ) : null}

@@ -37,49 +37,87 @@ const SHARE_PATH_RE =
   /\/(sharer|share|intent|dialog|tr|plugins|pixel)\b/i;
 
 /**
- * Extract social media URLs from raw HTML by scanning <a href> and
- * meta tags. Returns one URL per platform (the first/most canonical one).
+ * Social handles belonging to website platforms/services, not the actual
+ * business. These appear in CMS themes (Shopify footer, WP theme credits,
+ * etc.) and should be skipped.
+ */
+const PLATFORM_HANDLES = new Set([
+  "shopify", "wordpress", "wordpress.org", "wordpressdotcom",
+  "wikimapia", "wix", "wixcom", "squarespace", "squarespaceinc",
+  "weebly", "godaddy", "godaddyinc", "webflow", "webaborat",
+  "joomla", "drupal", "ghost", "ghostcms", "hubspot",
+  "bigcommerce", "prestashop", "magentocommerce", "magento",
+  "ecwid", "volusion", "3dcart", "shift4shop", "opencart",
+  "envato", "themeforest", "templatemonster", "elegantthemes",
+  "developer", "developers",
+]);
+
+/**
+ * Classify a raw URL string. Returns null if not a social profile.
+ */
+function classifyUrl(raw: string): SocialLink | null {
+  if (!/^https?:\/\//i.test(raw)) return null;
+
+  let u: URL;
+  try { u = new URL(raw); } catch { return null; }
+
+  if (SHARE_PATH_RE.test(u.pathname)) return null;
+
+  const match = PATTERNS.find((p) => p.host.test(u.hostname));
+  if (!match) return null;
+
+  const pathClean = u.pathname.replace(/^\/+|\/+$/g, "");
+  if (!pathClean) return null;
+
+  if (match.platform === "facebook" && /^(tr|plugins|sharer)/i.test(pathClean)) return null;
+  if (match.platform === "twitter" && /^(intent|share|home|login|signup)$/i.test(pathClean.split("/")[0] ?? "")) return null;
+
+  const handle = pathClean.split("/")[0]?.toLowerCase();
+  if (handle && PLATFORM_HANDLES.has(handle)) return null;
+
+  const canonical = `${u.protocol}//${u.hostname}${u.pathname}`.replace(/\/+$/, "");
+  return { platform: match.platform, url: canonical };
+}
+
+/**
+ * Extract social media URLs from raw HTML by scanning <a href>, meta tags,
+ * and Schema.org JSON-LD `sameAs` arrays.
+ * Returns one URL per platform (first/most canonical).
  */
 export function extractSocialLinks(html: string): SocialLink[] {
-  const candidates: SocialLink[] = [];
   const seenPlatforms = new Set<SocialPlatform>();
+  const results: SocialLink[] = [];
 
-  const hrefRe = /(?:href|content)=["']([^"']+)["']/gi;
-  let m: RegExpExecArray | null;
-
-  while ((m = hrefRe.exec(html)) !== null) {
-    const raw = m[1];
-    if (!raw) continue;
-    if (!/^https?:\/\//i.test(raw)) continue;
-
-    let u: URL;
-    try {
-      u = new URL(raw);
-    } catch {
-      continue;
-    }
-
-    if (SHARE_PATH_RE.test(u.pathname)) continue;
-
-    const match = PATTERNS.find((p) => p.host.test(u.hostname));
-    if (!match) continue;
-
-    // Skip if URL is just the platform root (no profile path)
-    const pathClean = u.pathname.replace(/^\/+|\/+$/g, "");
-    if (!pathClean) continue;
-
-    if (seenPlatforms.has(match.platform)) continue;
-
-    // Skip platform-internal paths that aren't profiles
-    if (match.platform === "facebook" && /^(tr|plugins|sharer)/i.test(pathClean)) continue;
-    if (match.platform === "twitter" && /^(intent|share|home|login|signup)$/i.test(pathClean.split("/")[0] ?? "")) continue;
-
-    // Strip query and hash, keep canonical path
-    const canonical = `${u.protocol}//${u.hostname}${u.pathname}`.replace(/\/+$/, "");
-
-    candidates.push({ platform: match.platform, url: canonical });
-    seenPlatforms.add(match.platform);
+  function add(link: SocialLink) {
+    if (seenPlatforms.has(link.platform)) return;
+    seenPlatforms.add(link.platform);
+    results.push(link);
   }
 
-  return candidates;
+  // 1) Schema.org JSON-LD — highest-confidence source
+  const jsonLdRe = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let jm: RegExpExecArray | null;
+  while ((jm = jsonLdRe.exec(html)) !== null) {
+    try {
+      const data = JSON.parse(jm[1]!);
+      const sameAs: unknown[] = Array.isArray(data.sameAs) ? data.sameAs
+        : typeof data.sameAs === "string" ? [data.sameAs] : [];
+      for (const entry of sameAs) {
+        if (typeof entry !== "string") continue;
+        const link = classifyUrl(entry);
+        if (link) add(link);
+      }
+    } catch { /* invalid JSON-LD, skip */ }
+  }
+
+  // 2) href/content attributes (links, meta og:, etc.)
+  const hrefRe = /(?:href|content)=["']([^"']+)["']/gi;
+  let m: RegExpExecArray | null;
+  while ((m = hrefRe.exec(html)) !== null) {
+    if (!m[1]) continue;
+    const link = classifyUrl(m[1]);
+    if (link) add(link);
+  }
+
+  return results;
 }

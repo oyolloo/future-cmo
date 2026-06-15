@@ -76,9 +76,9 @@ export function ResultsMap({ results }: Props) {
               title={r.name}
             >
               <Pin
-                background="oklch(0.70 0.16 50)"
-                borderColor="oklch(0.55 0.16 50)"
-                glyphColor="oklch(0.15 0.008 60)"
+                background="#007aff"
+                borderColor="#0062cc"
+                glyphColor="#ffffff"
               />
             </AdvancedMarker>
           ))}

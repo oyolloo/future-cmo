@@ -54,94 +54,108 @@
 }
 
 /* ============================================================
-   future-cmo — VaultKit-inspired dark warm palette
-   Single theme. Hue ~60° gives the warm undertone you see in
-   the reference (avoiding pure cool black). Primary is a warm
-   amber/orange in the ~50° range.
+   future-cmo — OyoPass-matched dark palette
+   Pure neutral blacks with blue (#007aff) accent.
+   Noise grain overlay for depth.
    ============================================================ */
 
 :root {
-  /* surfaces — dark warm gray scale */
-  --background: oklch(0.13 0.008 60);
-  --foreground: oklch(0.92 0.013 80);
-  --card: oklch(0.165 0.008 60);
-  --card-foreground: oklch(0.92 0.013 80);
-  --popover: oklch(0.18 0.008 60);
-  --popover-foreground: oklch(0.92 0.013 80);
+  /* surfaces — pure neutral dark scale (matches OyoPass) */
+  --background: #0f0f0f;
+  --foreground: #eaeaea;
+  --card: #1a1a1a;
+  --card-foreground: #eaeaea;
+  --popover: #1a1a1a;
+  --popover-foreground: #eaeaea;
 
   /* accents / neutrals */
-  --secondary: oklch(0.22 0.008 60);
-  --secondary-foreground: oklch(0.92 0.013 80);
-  --muted: oklch(0.20 0.008 60);
-  --muted-foreground: oklch(0.62 0.012 70);
-  --accent: oklch(0.24 0.008 60);
-  --accent-foreground: oklch(0.92 0.013 80);
+  --secondary: #222222;
+  --secondary-foreground: #eaeaea;
+  --muted: #1e1e1e;
+  --muted-foreground: #888888;
+  --accent: #222222;
+  --accent-foreground: #eaeaea;
 
-  /* brand — warm amber */
-  --primary: oklch(0.70 0.16 50);
-  --primary-foreground: oklch(0.15 0.008 60);
+  /* brand — blue accent */
+  --primary: #007aff;
+  --primary-foreground: #ffffff;
 
   /* state */
-  --destructive: oklch(0.65 0.18 25);
+  --destructive: #f87171;
 
   /* lines + inputs */
-  --border: oklch(0.26 0.008 60);
-  --input: oklch(0.22 0.008 60);
-  --ring: oklch(0.70 0.16 50);
+  --border: #2a2a2a;
+  --input: #222222;
+  --ring: #007aff;
 
-  /* chart / tag tints — amber, green, blue, yellow, lilac */
-  --chart-1: oklch(0.70 0.16 50);
-  --chart-2: oklch(0.72 0.14 160);
-  --chart-3: oklch(0.70 0.14 230);
-  --chart-4: oklch(0.78 0.14 90);
-  --chart-5: oklch(0.70 0.14 295);
+  /* chart / tag tints — blue, green, violet, amber, cyan */
+  --chart-1: #007aff;
+  --chart-2: #34d399;
+  --chart-3: #a78bfa;
+  --chart-4: #fbbf24;
+  --chart-5: #22d3ee;
 
-  --radius: 0.625rem;
+  --radius: 0.25rem;
 
-  /* sidebar (reserved — used when full chrome lands) */
-  --sidebar: oklch(0.145 0.008 60);
-  --sidebar-foreground: oklch(0.92 0.013 80);
-  --sidebar-primary: oklch(0.70 0.16 50);
-  --sidebar-primary-foreground: oklch(0.15 0.008 60);
-  --sidebar-accent: oklch(0.22 0.008 60);
-  --sidebar-accent-foreground: oklch(0.92 0.013 80);
-  --sidebar-border: oklch(0.26 0.008 60);
-  --sidebar-ring: oklch(0.70 0.16 50);
+  /* sidebar */
+  --sidebar: #0a0a0a;
+  --sidebar-foreground: #eaeaea;
+  --sidebar-primary: #007aff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1a1a1a;
+  --sidebar-accent-foreground: #eaeaea;
+  --sidebar-border: #1a1a1a;
+  --sidebar-ring: #007aff;
 }
 
-/* Mirror the palette so explicit dark mode opt-in stays consistent. */
 .dark {
-  --background: oklch(0.13 0.008 60);
-  --foreground: oklch(0.92 0.013 80);
-  --card: oklch(0.165 0.008 60);
-  --card-foreground: oklch(0.92 0.013 80);
-  --popover: oklch(0.18 0.008 60);
-  --popover-foreground: oklch(0.92 0.013 80);
-  --secondary: oklch(0.22 0.008 60);
-  --secondary-foreground: oklch(0.92 0.013 80);
-  --muted: oklch(0.20 0.008 60);
-  --muted-foreground: oklch(0.62 0.012 70);
-  --accent: oklch(0.24 0.008 60);
-  --accent-foreground: oklch(0.92 0.013 80);
-  --primary: oklch(0.70 0.16 50);
-  --primary-foreground: oklch(0.15 0.008 60);
-  --destructive: oklch(0.65 0.18 25);
-  --border: oklch(0.26 0.008 60);
-  --input: oklch(0.22 0.008 60);
-  --ring: oklch(0.70 0.16 50);
-  --chart-1: oklch(0.70 0.16 50);
-  --chart-2: oklch(0.72 0.14 160);
-  --chart-3: oklch(0.70 0.14 230);
-  --chart-4: oklch(0.78 0.14 90);
-  --chart-5: oklch(0.70 0.14 295);
-  --sidebar: oklch(0.145 0.008 60);
-  --sidebar-foreground: oklch(0.92 0.013 80);
-  --sidebar-primary: oklch(0.70 0.16 50);
-  --sidebar-primary-foreground: oklch(0.15 0.008 60);
-  --sidebar-accent: oklch(0.22 0.008 60);
-  --sidebar-accent-foreground: oklch(0.92 0.013 80);
-  --sidebar-border: oklch(0.26 0.008 60);
-  --sidebar-ring: oklch(0.70 0.16 50);
+  --background: #0f0f0f;
+  --foreground: #eaeaea;
+  --card: #1a1a1a;
+  --card-foreground: #eaeaea;
+  --popover: #1a1a1a;
+  --popover-foreground: #eaeaea;
+  --secondary: #222222;
+  --secondary-foreground: #eaeaea;
+  --muted: #1e1e1e;
+  --muted-foreground: #888888;
+  --accent: #222222;
+  --accent-foreground: #eaeaea;
+  --primary: #007aff;
+  --primary-foreground: #ffffff;
+  --destructive: #f87171;
+  --border: #2a2a2a;
+  --input: #222222;
+  --ring: #007aff;
+  --chart-1: #007aff;
+  --chart-2: #34d399;
+  --chart-3: #a78bfa;
+  --chart-4: #fbbf24;
+  --chart-5: #22d3ee;
+  --sidebar: #0a0a0a;
+  --sidebar-foreground: #eaeaea;
+  --sidebar-primary: #007aff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1a1a1a;
+  --sidebar-accent-foreground: #eaeaea;
+  --sidebar-border: #1a1a1a;
+  --sidebar-ring: #007aff;
+}
+
+/* Noise overlay — fractal grain for depth (same as OyoPass) */
+.noise::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.035;
+  z-index: 100;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
 }
 
 @layer base {
@@ -180,13 +194,13 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background-color: oklch(0.35 0.008 60);
+    background-color: #333333;
     border: 2px solid transparent;
     background-clip: padding-box;
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background-color: oklch(0.45 0.008 60);
+    background-color: #555555;
   }
   ::-webkit-scrollbar-corner {
     background: transparent;

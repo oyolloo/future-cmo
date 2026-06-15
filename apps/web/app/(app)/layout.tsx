@@ -10,7 +10,7 @@ export default async function AppLayout({
   const user = await requireUser();
 
   return (
-    <div className="flex min-h-screen">
+    <div className="noise flex min-h-screen">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar user={{ username: user.username, email: user.email }} />

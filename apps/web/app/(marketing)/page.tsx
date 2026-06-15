@@ -4,11 +4,11 @@ import { buttonVariants } from "@kit/ui/button";
 
 export default function LandingPage() {
   return (
-    <main className="relative isolate flex min-h-screen flex-col">
+    <main className="noise relative isolate flex min-h-screen flex-col">
       {/* subtle radial glow behind the hero */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[800px] bg-[radial-gradient(60%_60%_at_50%_0%,oklch(0.70_0.16_50/0.18),transparent_70%)]"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[800px] bg-[radial-gradient(60%_60%_at_50%_0%,rgba(0,122,255,0.12),transparent_70%)]"
       />
 
       {/* top bar */}

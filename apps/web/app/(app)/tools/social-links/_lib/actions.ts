@@ -8,34 +8,46 @@ export type SocialLinkResult = {
   platform: string;
   url: string;
   handle: string | null;
-  source: "scrape" | "google" | "schema";
+  source: "scrape" | "search" | "probe";
 };
 
 export type SocialLinksData = {
   domain: string;
   links: SocialLinkResult[];
   pagesScanned: string[];
-  googleSearched: boolean;
+  deepSearched: boolean;
   durationMs: number;
 };
 
 const QUICK_PAGES = ["", "/contact", "/about", "/about-us"];
 const DEEP_PAGES = [
   ...QUICK_PAGES,
-  "/connect", "/links", "/social", "/social-media",
-  "/follow", "/follow-us",
+  "/connect", "/links", "/social", "/follow-us",
 ];
 
 const SEARCH_PLATFORMS = [
   { platform: "facebook", site: "facebook.com" },
   { platform: "instagram", site: "instagram.com" },
-  { platform: "twitter", site: "twitter.com OR site:x.com" },
+  { platform: "twitter", site: "twitter.com" },
   { platform: "linkedin", site: "linkedin.com" },
   { platform: "youtube", site: "youtube.com" },
   { platform: "tiktok", site: "tiktok.com" },
   { platform: "pinterest", site: "pinterest.com" },
   { platform: "github", site: "github.com" },
 ];
+
+const PROBE_TEMPLATES: Record<string, (u: string) => string> = {
+  facebook: (u) => `https://www.facebook.com/${u}/`,
+  instagram: (u) => `https://www.instagram.com/${u}/`,
+  twitter: (u) => `https://x.com/${u}`,
+  linkedin: (u) => `https://www.linkedin.com/company/${u}`,
+  youtube: (u) => `https://www.youtube.com/@${u}`,
+  tiktok: (u) => `https://www.tiktok.com/@${u}`,
+  github: (u) => `https://github.com/${u}`,
+  pinterest: (u) => `https://www.pinterest.com/${u}/`,
+};
+
+// ─── Fetchers ───────────────────────────────────────────────────────
 
 async function fetchPage(url: string): Promise<string | null> {
   try {
@@ -57,102 +69,149 @@ async function fetchPage(url: string): Promise<string | null> {
   }
 }
 
-async function searchGoogle(query: string): Promise<string | null> {
+// ─── DuckDuckGo Search ──────────────────────────────────────────────
+
+async function searchDDG(query: string): Promise<string[]> {
   try {
-    const url = `https://www.google.com/search?q=${encodeURIComponent(query)}&num=10&hl=en`;
-    const res = await fetch(url, {
-      signal: AbortSignal.timeout(10_000),
+    const res = await fetch("https://html.duckduckgo.com/html/", {
+      method: "POST",
       headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-        Accept: "text/html,application/xhtml+xml",
-        "Accept-Language": "en-US,en;q=0.9",
       },
+      body: `q=${encodeURIComponent(query)}&b=`,
+      signal: AbortSignal.timeout(10_000),
       redirect: "follow",
     });
-    if (!res.ok) return null;
-    return res.text();
-  } catch {
-    return null;
-  }
-}
+    if (!res.ok) return [];
+    const html = await res.text();
 
-function extractUrlsFromGoogleHtml(html: string, platformSite: string): string[] {
-  const urls: string[] = [];
-  const siteDomain = platformSite.split(" OR ")[0]!;
-
-  // Google wraps result links as /url?q=ENCODED_URL
-  const redirectRe = /\/url\?q=(https?[^&"]+)/gi;
-  let m;
-  while ((m = redirectRe.exec(html)) !== null) {
-    try {
-      const decoded = decodeURIComponent(m[1]!);
-      if (decoded.includes(siteDomain) || (platformSite.includes("x.com") && decoded.includes("x.com"))) {
-        urls.push(decoded);
-      }
-    } catch { /* skip */ }
-  }
-
-  // Also scan for direct href links to the platform
-  const hrefRe = /href="(https?:\/\/[^"]+)"/gi;
-  while ((m = hrefRe.exec(html)) !== null) {
-    const href = m[1]!;
-    if (href.includes(siteDomain) || (platformSite.includes("x.com") && href.includes("x.com"))) {
-      urls.push(href);
+    const urls: string[] = [];
+    // DDG wraps result URLs in /l/?uddg=ENCODED_URL
+    const uddgRe = /uddg=(https?[^&"]+)/gi;
+    let m;
+    while ((m = uddgRe.exec(html)) !== null) {
+      try {
+        urls.push(decodeURIComponent(m[1]!));
+      } catch { /* skip */ }
     }
+    // Also grab any direct hrefs to social platforms
+    const hrefRe = /href="(https?:\/\/(?!duckduckgo\.com)[^"]+)"/gi;
+    while ((m = hrefRe.exec(html)) !== null) {
+      urls.push(m[1]!);
+    }
+    return urls;
+  } catch {
+    return [];
   }
-
-  return urls;
 }
 
-async function googleSearchSocials(
+async function searchSocials(
   domain: string,
+  skip: Set<string>,
 ): Promise<SocialLinkResult[]> {
   const results: SocialLinkResult[] = [];
-  const seenPlatforms = new Set<string>();
+  const toSearch = SEARCH_PLATFORMS.filter((p) => !skip.has(p.platform));
 
-  // Run searches in parallel batches of 3 to avoid rate-limiting
-  for (let i = 0; i < SEARCH_PLATFORMS.length; i += 3) {
-    const batch = SEARCH_PLATFORMS.slice(i, i + 3);
-    const htmlResults = await Promise.all(
-      batch.map((p) =>
-        searchGoogle(`site:${p.site} "${domain}"`).then((html) => ({
-          ...p,
-          html,
-        })),
-      ),
+  // Batch 3 at a time to avoid rate-limiting
+  for (let i = 0; i < toSearch.length; i += 3) {
+    const batch = toSearch.slice(i, i + 3);
+    const batchResults = await Promise.all(
+      batch.map(async (p) => {
+        const urls = await searchDDG(`site:${p.site} "${domain}"`);
+        return { ...p, urls };
+      }),
     );
 
-    for (const { platform, site, html } of htmlResults) {
-      if (!html || seenPlatforms.has(platform)) continue;
-      const urls = extractUrlsFromGoogleHtml(html, site);
-
-      // Find the first URL that looks like a profile
+    for (const { platform, urls } of batchResults) {
+      if (skip.has(platform)) continue;
       for (const rawUrl of urls) {
-        const found = extractSocialLinks(
-          `<a href="${rawUrl.replace(/"/g, "&quot;")}">x</a>`,
-        );
+        const fakeHtml = `<a href="${rawUrl.replace(/"/g, "&quot;")}">x</a>`;
+        const found = extractSocialLinks(fakeHtml);
         if (found.length > 0 && found[0]!.platform === platform) {
-          seenPlatforms.add(platform);
+          skip.add(platform);
           results.push({
             platform: found[0]!.platform,
             url: found[0]!.url,
             handle: handleFromSocialUrl(found[0]!.url),
-            source: "google",
+            source: "search",
           });
           break;
         }
       }
     }
 
-    // Small delay between batches
-    if (i + 3 < SEARCH_PLATFORMS.length) {
-      await new Promise((r) => setTimeout(r, 500));
+    if (i + 3 < toSearch.length) {
+      await new Promise((r) => setTimeout(r, 300));
     }
   }
 
   return results;
 }
+
+// ─── Profile probing ────────────────────────────────────────────────
+
+async function probeProfile(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(8_000),
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        Accept: "text/html",
+      },
+      redirect: "follow",
+    });
+    if (!res.ok) return false;
+    const html = await res.text();
+    // Reject generic error/login pages
+    if (/page not found|this page isn.t available|404|content is not available/i.test(html.slice(0, 5000))) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function probeSocials(
+  usernames: string[],
+  skip: Set<string>,
+): Promise<SocialLinkResult[]> {
+  const results: SocialLinkResult[] = [];
+  const platforms = Object.entries(PROBE_TEMPLATES).filter(
+    ([p]) => !skip.has(p),
+  );
+
+  for (const username of usernames) {
+    if (platforms.length === 0) break;
+    const remaining = platforms.filter(([p]) => !skip.has(p));
+
+    const probes = await Promise.all(
+      remaining.map(async ([platform, makeUrl]) => {
+        const url = makeUrl(username);
+        const exists = await probeProfile(url);
+        return { platform, url, exists };
+      }),
+    );
+
+    for (const { platform, url, exists } of probes) {
+      if (!exists || skip.has(platform)) continue;
+      skip.add(platform);
+      results.push({
+        platform,
+        url: url.replace(/\/+$/, ""),
+        handle: handleFromSocialUrl(url),
+        source: "probe",
+      });
+    }
+  }
+
+  return results;
+}
+
+// ─── Main action ────────────────────────────────────────────────────
 
 export async function findSocialLinksAction(
   rawUrl: string,
@@ -187,7 +246,7 @@ export async function findSocialLinksAction(
     allLinks.push(link);
   }
 
-  // 1) Scrape website pages
+  // Step 1: Scrape website pages
   for (const suffix of pages) {
     const pageUrl = base + suffix;
     const html = await fetchPage(pageUrl);
@@ -205,14 +264,27 @@ export async function findSocialLinksAction(
     }
   }
 
-  // 2) Deep mode: Google search for missing platforms
-  let googleSearched = false;
+  // Step 2 (deep): Search DuckDuckGo for missing platforms
   if (deep) {
-    googleSearched = true;
-    const googleResults = await googleSearchSocials(domain);
-    for (const link of googleResults) {
-      addLink(link);
+    const searchResults = await searchSocials(domain, new Set(seenPlatforms));
+    for (const link of searchResults) addLink(link);
+  }
+
+  // Step 3 (deep): Probe direct profile URLs using domain name + found handles
+  if (deep) {
+    const candidates = new Set<string>();
+    // Domain name without TLD as username candidate
+    const domainName = domain.split(".")[0];
+    if (domainName && domainName.length >= 2) candidates.add(domainName);
+    // Collect handles already found (they might exist on other platforms too)
+    for (const link of allLinks) {
+      if (link.handle) candidates.add(link.handle);
     }
+    const probeResults = await probeSocials(
+      [...candidates],
+      new Set(seenPlatforms),
+    );
+    for (const link of probeResults) addLink(link);
   }
 
   return {
@@ -221,7 +293,7 @@ export async function findSocialLinksAction(
       domain,
       links: allLinks,
       pagesScanned,
-      googleSearched,
+      deepSearched: deep,
       durationMs: Date.now() - start,
     },
   };

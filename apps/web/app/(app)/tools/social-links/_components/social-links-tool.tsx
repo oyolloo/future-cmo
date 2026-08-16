@@ -27,8 +27,8 @@ const PLATFORM_COLORS: Record<string, string> = {
 
 const SOURCE_LABELS: Record<string, string> = {
   scrape: "website",
-  google: "google",
-  schema: "schema.org",
+  search: "search",
+  probe: "verified",
 };
 
 export function SocialLinksTool() {
@@ -253,9 +253,9 @@ export function SocialLinksTool() {
                   ))}
                 </ul>
               </div>
-              {result.googleSearched ? (
+              {result.deepSearched ? (
                 <p className="font-mono text-[0.625rem] uppercase tracking-wider text-muted-foreground">
-                  Google search · 8 platforms queried
+                  Deep search · DuckDuckGo + profile probing
                 </p>
               ) : null}
             </div>

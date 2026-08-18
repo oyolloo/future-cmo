@@ -70,6 +70,23 @@ app.post('/wa/send', auth, async (req, res) => {
   res.status(r.ok ? 200 : 409).json(r);
 });
 
+/**
+ * Which of these numbers are on WhatsApp.
+ *
+ * Read-only: nothing is sent and no conversation starts. Separate from /wa/send
+ * so it can be rate-limited on its own and, if you choose, run on a different
+ * linked session — a lookup limit should never cost you the number you send
+ * from.
+ */
+app.post('/wa/exists', auth, async (req, res) => {
+  const { workspace_id, numbers } = req.body;
+  if (!Array.isArray(numbers) && typeof numbers !== 'string') {
+    return res.status(400).json({ ok: false, error: 'numbers must be a string or an array' });
+  }
+  const r = await wa.exists(workspace_id || 'default', numbers);
+  res.status(r.ok ? 200 : 409).json(r);
+});
+
 // ── Email routes ─────────────────────────────────────────────────────────────
 
 app.post('/email/send', auth, async (req, res) => {

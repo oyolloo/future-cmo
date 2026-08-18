@@ -20,7 +20,10 @@ export function OPTIONS() { return handleCorsPreFlight(); }
 const AUTO_URL = process.env.AUTOMATION_URL || "http://localhost:3001";
 const AUTO_SECRET = process.env.AUTOMATION_SECRET || "dev-secret";
 
-const POST_ACTIONS = new Set(["connect", "disconnect", "send"]);
+// "exists" asks whether numbers are on WhatsApp. Read-only, but it is
+// still a whitelist entry rather than a pass-through: the automation server
+// behind this is guarded only by a static secret.
+const POST_ACTIONS = new Set(["connect", "disconnect", "send", "exists"]);
 
 async function forward(
   path: string,

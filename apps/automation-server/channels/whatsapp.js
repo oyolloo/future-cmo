@@ -239,3 +239,64 @@ export async function send(wsId, phone, message, opts = {}) {
     return { ok: false, error: err.message || 'Send failed' };
   }
 }
+
+// ── Existence check ──────────────────────────────────────────────────────────
+
+/**
+ * Asks WhatsApp which of these numbers are registered.
+ *
+ * This is what the paid "WhatsApp checker" services sell, and it is one call on
+ * a session we already hold. It sends nothing: no message, no typing, no
+ * conversation — the recipient never learns they were looked up.
+ *
+ * The risk is not the individual call, it is the volume. Thousands of lookups
+ * from one session is the shape of scraping, and WhatsApp bans for it, so the
+ * batch is capped here as well as paced by the caller. Two limits are better
+ * than one when the cost of exceeding them is losing the number you send from.
+ */
+const MAX_BATCH = 50;
+
+export async function exists(wsId, numbers) {
+  const sock = activeSockets.get(wsId);
+  if (!sock?.user) {
+    return { ok: false, error: 'WhatsApp not connected' };
+  }
+
+  const list = (Array.isArray(numbers) ? numbers : [numbers])
+    .map((n) => String(n || '').replace(/[^\d]/g, ''))
+    // Shorter than this is not a dialable international number, and asking
+    // about it wastes part of a rate limit that matters.
+    .filter((n) => n.length >= 8 && n.length <= 15);
+
+  const unique = [...new Set(list)].slice(0, MAX_BATCH);
+  if (!unique.length) return { ok: true, results: [] };
+
+  try {
+    const jids = unique.map((n) => `${n}@s.whatsapp.net`);
+    const found = await sock.onWhatsApp(...jids);
+
+    // Baileys answers only for numbers it recognises, so absence is the answer
+    // for the rest — mapping over the input keeps that explicit rather than
+    // leaving the caller to infer it from a shorter array.
+    const hits = new Map(
+      (found || [])
+        .filter((r) => r?.exists)
+        .map((r) => [String(r.jid || '').split('@')[0].replace(/[^\d]/g, ''), r.jid]),
+    );
+
+    return {
+      ok: true,
+      results: unique.map((number) => ({
+        number,
+        // A number can answer on a different JID than the one asked for, when
+        // the country's dialing rules add or drop a digit.
+        exists: hits.has(number),
+        jid: hits.get(number) || null,
+      })),
+      truncated: list.length > MAX_BATCH ? list.length - MAX_BATCH : 0,
+    };
+  } catch (err) {
+    console.error(`[wa] ws:${wsId} >>> exists failed`, err.message);
+    return { ok: false, error: err.message || 'Check failed' };
+  }
+}
